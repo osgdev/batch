@@ -60,7 +60,7 @@ public class Main {
 		}
 		String lookupFile=CONFIG.getProperty("lookupFile");
 		if( new File(lookupFile).exists()){
-			lookup = new SelectorLookup(lookupFile);
+			lookup = new SelectorLookup(lookupFile, CONFIG);
 		}else{
 			LOGGER.fatal("Lookup file='{}' doesn't exist",lookupFile);
 			System.exit(1);
@@ -115,6 +115,15 @@ public class Main {
 			reqFields.add(presentationPriorityConfigPath + ",presentationPriorityConfigPath,N");
 			String presentationPriorityFileSuffix = CONFIG.getProperty("presentationPriorityFileSuffix");
 			reqFields.add(presentationPriorityFileSuffix + ",presentationPriorityFileSuffix,N");
+			String productionConfigPath = CONFIG.getProperty("productionConfigPath");
+			reqFields.add(productionConfigPath + ",productionConfigPath,N");
+			String productionFileSuffix = CONFIG.getProperty("productionFileSuffix");
+			reqFields.add(productionFileSuffix + ",productionFileSuffix,N");
+			String postageConfigPath = CONFIG.getProperty("postageConfigPath");
+			reqFields.add(postageConfigPath + ",postageConfigPath,N");
+			String postageFileSuffix = CONFIG.getProperty("postageFileSuffix");
+			reqFields.add(postageFileSuffix + ",postageFileSuffix,N");
+			
 			for(String str : reqFields){
 				String[] split = str.split(",");
 				if ( "null".equals(split[0])){
@@ -129,6 +138,8 @@ public class Main {
 			}
 			
 			printer.printRecord(docRef,site,jidField);
+			
+			ProductionConfiguration pc = null;
 			
 			Iterable<CSVRecord> records = csvFileParser.getRecords();
 			boolean firstCustomer = true;
@@ -150,6 +161,9 @@ public class Main {
 						k++;
 					}
 					LOGGER.info("Presentation priority map '{}' contains {} values",presConfig, presLookup.size());
+					
+					pc = new ProductionConfiguration(postageConfigPath + lookup.get(record.get(selectorRef)).getProductionConfig() + postageFileSuffix );
+					
 					firstCustomer=false;
 				}
 				Customer customer = new Customer(
@@ -175,6 +189,8 @@ public class Main {
 				//LOGGER.info("Created customer {}",customer);
 			}
 			LOGGER.info("Created {} customers",customers.size());
+			
+			
 
 			try{
 				//SORT HERE
@@ -184,7 +200,7 @@ public class Main {
 				System.exit(1);
 			}
 			
-			CalculateLocation cl = new CalculateLocation(customers, lookup, CONFIG);
+			CalculateLocation cl = new CalculateLocation(customers, lookup, pc);
 			cl.calculate();
 		
 			try{

@@ -16,9 +16,9 @@ public class CalculateLocation {
 	private static final Logger LOGGER = LogManager.getLogger(Main.class.getName());
 	private List<Customer> input;
 	private SelectorLookup lookup;
-	private Properties props;
+	private ProductionConfiguration props;
 	
-	public CalculateLocation(List<Customer> input, SelectorLookup lookup, Properties props){
+	public CalculateLocation(List<Customer> input, SelectorLookup lookup, ProductionConfiguration props){
 		this.input=input;
 		this.lookup=lookup;
 		this.props=props;
@@ -102,78 +102,102 @@ public class CalculateLocation {
 				System.exit(1);
 				firstCustomer =false;
 			}
-			if( "CODED".equals(customer.getBatchType()) ){
-				if( isNumeric(lookup.get(customer.getSelectorRef()).getCoded().trim()) ){
-					
-					if( "E".equals(customer.getLang()) ){
+			if( "SORTED".equals(customer.getBatchType()) ){
+				if( "E".equals(customer.getLang()) ){
+					if( isNumeric(props.getEnglishSorted()) ){
 						if(eCodedToFf == null){
-							eCodedToFf = (int) ( codedE.size() * ( (float)Integer.parseInt(lookup.get(customer.getSelectorRef()).getCoded().trim()) / 100 ) );
+							eCodedToFf = (int) ( codedE.size() * ( (float)Integer.parseInt(props.getEnglishSorted()) / 100 ) );
 							codedNumberToFf = eCodedToFf;
 							codedCount = 0;
 							LOGGER.info("Size of english coded= {}, FF set to {}",codedE.size(),codedNumberToFf );
 						}
-					}else{
+						if (codedCount < codedNumberToFf){
+							customer.setSite("f");
+							codedCount ++;
+						}else{
+							customer.setSite("m");
+						}
+					} else {
+						if("M".equalsIgnoreCase(props.getEnglishSorted()) ){
+							customer.setSite("m");
+						} else {
+							customer.setSite("f");
+						}
+					}
+				}else{
+					if( isNumeric(props.getWelshSorted()) ){
 						if(wCodedToFf == null){
-							wCodedToFf = (int) ( codedW.size() * ( (float)Integer.parseInt(lookup.get(customer.getSelectorRef()).getCoded().trim()) / 100 ) );
+							wCodedToFf = (int) ( codedW.size() * ( (float)Integer.parseInt(props.getWelshSorted()) / 100 ) );
 							codedNumberToFf = wCodedToFf;
 							codedCount = 0;
 							LOGGER.info("Size of welsh coded= {}, FF set to {}",codedW.size(),codedNumberToFf );
 						}
-					}
-					
-					if (codedCount < codedNumberToFf){
-						customer.setSite("f");
-						codedCount ++;
-					}else{
-						customer.setSite("m");
-					}
-				}else{
-					if("M".equalsIgnoreCase(lookup.get(customer.getSelectorRef()).getCoded().trim()) ){
-						customer.setSite("m");
-					}else{
-						customer.setSite("f");
+						if (codedCount < codedNumberToFf){
+							customer.setSite("f");
+							codedCount ++;
+						}else{
+							customer.setSite("m");
+						}
+					} else {
+						if("M".equalsIgnoreCase(props.getWelshSorted()) ){
+							customer.setSite("m");
+						} else {
+							customer.setSite("f");
+						}
 					}
 				}
 			}
-			if( "UNCODED".equals(customer.getBatchType()) ){
-				if( isNumeric(lookup.get(customer.getSelectorRef()).getUncoded().trim()) ){
-					
-					int numberToFf = 0;
-					if( "E".equals(customer.getLang()) ){
+			if( "UNSORTED".equals(customer.getBatchType()) ){
+				if( "E".equals(customer.getLang()) ){
+					if( isNumeric(props.getEnglishUnsorted()) ){
 						if(eUncodedToFf == null){
-							eUncodedToFf = (int) ( uncodedE.size() * ( (float)Integer.parseInt(lookup.get(customer.getSelectorRef()).getCoded().trim()) / 100 ) );
+							eUncodedToFf = (int) ( uncodedE.size() * ( (float)Integer.parseInt(props.getEnglishUnsorted()) / 100 ) );
 							uncodedNumberToFf = eUncodedToFf;
 							uncodedCount = 0;
 							LOGGER.info("Size of english uncoded= {}, FF set to {}",uncodedE.size(),uncodedNumberToFf );
 						}
-					}else{
+						if (uncodedCount < uncodedNumberToFf){
+							customer.setSite("f");
+							uncodedCount ++;
+						}else{
+							customer.setSite("m");
+						}
+					} else {
+						if("M".equalsIgnoreCase(props.getEnglishUnsorted()) ){
+							customer.setSite("m");
+						} else {
+							customer.setSite("f");
+						}
+					}
+				}else{
+					if( isNumeric(props.getWelshUnsorted()) ){
 						if(wUncodedToFf == null){
-							wUncodedToFf = (int) ( uncodedW.size() * ( (float)Integer.parseInt(lookup.get(customer.getSelectorRef()).getCoded().trim()) / 100 ) );
+							wUncodedToFf = (int) ( uncodedW.size() * ( (float)Integer.parseInt(props.getWelshUnsorted()) / 100 ) );
 							uncodedNumberToFf = wUncodedToFf;
 							uncodedCount = 0;
 							LOGGER.info("Size of welsh uncoded= {}, FF set to {}",uncodedW.size(),uncodedNumberToFf );
 						}
-					}
-					
-					if (uncodedCount < uncodedNumberToFf){
-						customer.setSite("f");
-						uncodedCount ++;
-					}else{
-						customer.setSite("m");
-					}
-				}else{
-					if( "M".equalsIgnoreCase(lookup.get(customer.getSelectorRef()).getUncoded().trim()) ){
-						customer.setSite("m");
-					}else{
-						customer.setSite("f");
+						if (uncodedCount < uncodedNumberToFf){
+							customer.setSite("f");
+							uncodedCount ++;
+						}else{
+							customer.setSite("m");
+						}
+					} else {
+						if("M".equalsIgnoreCase(props.getWelshUnsorted()) ){
+							customer.setSite("m");
+						} else {
+							customer.setSite("f");
+						}
 					}
 				}
 			}
+				
 			if( "FLEET".equals(customer.getBatchType()) ){
-				if( isNumeric(lookup.get(customer.getSelectorRef()).getFleet().trim()) ){
-					if( "E".equals(customer.getLang()) ){
+				if( "E".equals(customer.getLang()) ){
+					if( isNumeric(props.getEnglishFleet()) ){
 						if(eFleetGroupsToFf == null){
-							int numberToFf = (int) ( fleetE.size() * ( (float)Integer.parseInt(lookup.get(customer.getSelectorRef()).getCoded().trim()) / 100 ) );
+							int numberToFf = (int) ( fleetE.size() * ( (float)Integer.parseInt(props.getEnglishFleet()) / 100 ) );
 							eFleetGroupsToFf = calculateGroupLocation(fleetE, numberToFf);
 						}
 						if (eFleetGroupsToFf.contains(customer.getGroupId())){
@@ -181,9 +205,17 @@ public class CalculateLocation {
 						}else{
 							customer.setSite("m");
 						}
-					}else{
+					} else {
+						if( "M".equalsIgnoreCase(props.getEnglishFleet()) ){
+							customer.setSite("m");
+						}else{
+							customer.setSite("f");
+						}
+					}
+				} else {
+					if( isNumeric(props.getWelshFleet()) ){
 						if(wFleetGroupsToFf == null){
-							int numberToFf = (int) ( fleetW.size() * ( (float)Integer.parseInt(lookup.get(customer.getSelectorRef()).getCoded().trim()) / 100 ) );
+							int numberToFf = (int) ( fleetW.size() * ( (float)Integer.parseInt(props.getWelshFleet()) / 100 ) );
 							wFleetGroupsToFf = calculateGroupLocation(fleetW, numberToFf);
 						}
 						if (wFleetGroupsToFf.contains(customer.getGroupId())){
@@ -191,20 +223,20 @@ public class CalculateLocation {
 						}else{
 							customer.setSite("m");
 						}
-					}
-				}else{
-					if( "M".equalsIgnoreCase(lookup.get(customer.getSelectorRef()).getFleet().trim()) ){
-						customer.setSite("m");
-					}else{
-						customer.setSite("f");
+					} else {
+						if( "M".equalsIgnoreCase(props.getWelshFleet()) ){
+							customer.setSite("m");
+						}else{
+							customer.setSite("f");
+						}
 					}
 				}
 			}
 			if( "CLERICAL".equals(customer.getBatchType()) ){
-				if( isNumeric(lookup.get(customer.getSelectorRef()).getClerical().trim()) ){
-					if( "E".equals(customer.getLang()) ){
+				if( "E".equals(customer.getLang()) ){
+					if( isNumeric(props.getEnglishClerical()) ){
 						if(eClericalGroupsToFf == null){
-							int numberToFf = (int) ( clericalE.size() * ( (float)Integer.parseInt(lookup.get(customer.getSelectorRef()).getCoded().trim()) / 100 ) );
+							int numberToFf = (int) ( clericalE.size() * ( (float)Integer.parseInt(props.getEnglishClerical()) / 100 ) );
 							eClericalGroupsToFf = calculateGroupLocation(clericalE, numberToFf);
 						}
 						if (eClericalGroupsToFf.contains(customer.getGroupId())){
@@ -212,9 +244,17 @@ public class CalculateLocation {
 						}else{
 							customer.setSite("m");
 						}
-					}else{
+					} else {
+						if( "M".equalsIgnoreCase(props.getEnglishClerical()) ){
+							customer.setSite("m");
+						}else{
+							customer.setSite("f");
+						}
+					}
+				} else {
+					if( isNumeric(props.getWelshClerical()) ){
 						if(wClericalGroupsToFf == null){
-							int numberToFf = (int) ( clericalW.size() * ( (float)Integer.parseInt(lookup.get(customer.getSelectorRef()).getCoded().trim()) / 100 ) );
+							int numberToFf = (int) ( clericalW.size() * ( (float)Integer.parseInt(props.getWelshClerical()) / 100 ) );
 							wClericalGroupsToFf = calculateGroupLocation(fleetW, numberToFf);
 						}
 						if (wClericalGroupsToFf.contains(customer.getGroupId())){
@@ -222,20 +262,22 @@ public class CalculateLocation {
 						}else{
 							customer.setSite("m");
 						}
-					}
-				}else{
-					if( "M".equalsIgnoreCase(lookup.get(customer.getSelectorRef()).getClerical().trim()) ){
-						customer.setSite("m");
-					}else{
-						customer.setSite("f");
+					} else {
+						if( "M".equalsIgnoreCase(props.getWelshClerical()) ){
+							customer.setSite("m");
+						}else{
+							customer.setSite("f");
+						}
 					}
 				}
 			}
+			
+			
 			if( "MULTI".equals(customer.getBatchType()) ){
-				if( isNumeric(lookup.get(customer.getSelectorRef()).getMulti()) ){
-					if( "E".equals(customer.getLang()) ){
+				if( "E".equals(customer.getLang()) ){
+					if( isNumeric(props.getEnglishMulti()) ){
 						if(eMultiGroupsToFf == null){
-							int numberToFf = (int) ( multiE.size() * ( (float)Integer.parseInt(lookup.get(customer.getSelectorRef()).getCoded().trim()) / 100 ) );
+							int numberToFf = (int) ( multiE.size() * ( (float)Integer.parseInt(props.getEnglishMulti()) / 100 ) );
 							eMultiGroupsToFf = calculateGroupLocation(multiE, numberToFf);
 						}
 						if (eMultiGroupsToFf.contains(customer.getGroupId())){
@@ -243,9 +285,17 @@ public class CalculateLocation {
 						}else{
 							customer.setSite("m");
 						}
-					}else{
+					} else {
+						if( "M".equalsIgnoreCase(props.getEnglishMulti()) ){
+							customer.setSite("m");
+						}else{
+							customer.setSite("f");
+						}
+					}
+				} else {
+					if( isNumeric(props.getWelshMulti()) ){
 						if(wMultiGroupsToFf == null){
-							int numberToFf = (int) ( multiW.size() * ( (float)Integer.parseInt(lookup.get(customer.getSelectorRef()).getCoded().trim()) / 100 ) );
+							int numberToFf = (int) ( multiW.size() * ( (float)Integer.parseInt(props.getWelshMulti()) / 100 ) );
 							wMultiGroupsToFf = calculateGroupLocation(multiW, numberToFf);
 						}
 						if (wMultiGroupsToFf.contains(customer.getGroupId())){
@@ -253,17 +303,15 @@ public class CalculateLocation {
 						}else{
 							customer.setSite("m");
 						}
-					}
-				}else{
-					if( "M".equalsIgnoreCase(lookup.get(customer.getSelectorRef()).getMulti().trim()) ){
-						customer.setSite("m");
-					}else{
-						customer.setSite("f");
+					} else {
+						if( "M".equalsIgnoreCase(props.getWelshMulti()) ){
+							customer.setSite("m");
+						}else{
+							customer.setSite("f");
+						}
 					}
 				}
 			}
-			//LOGGER.info("Customer {} site now set to {}",customer.getDocRef(), customer.getSite());
-			
 		}
 	}
 	
