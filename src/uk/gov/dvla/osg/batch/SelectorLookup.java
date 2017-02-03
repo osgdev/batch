@@ -13,7 +13,7 @@ import org.apache.logging.log4j.Logger;
 
 public class SelectorLookup {
 	private static final Logger LOGGER = LogManager.getLogger(Main.class.getName());
-	private Properties CONFIG;
+	private static Properties CONFIG = null;
 	
 	private String ref, productionConfig, postageConfig, filePath, presentationConfig;
 
@@ -22,22 +22,36 @@ public class SelectorLookup {
 	private HashMap<String, SelectorLookup> lookup = new HashMap<String, SelectorLookup>();
 	
 	public SelectorLookup(String file, Properties props){
+		LOGGER.info("Creating Lookup..");
 		this.filePath=file;
-		this.CONFIG=props;
+		CONFIG=props;
 		if(new File(file).exists()){
+			LOGGER.info("File '{}' exists",file);
 			try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+				LOGGER.info("BufferedReader created succesfully");
 				String line;
+				
 			    while ((line = br.readLine()) != null) {
 			    	String[] array = line.split("\\|");
+			    	LOGGER.debug("Split line '{}' into {} parts",line,array.length);
 			    	if( !("SELECTOR".equals(array[0].trim())) ){
-			    		lookup.put(array[0].trim(), new SelectorLookup(file, array[0].trim(),Integer.parseInt(array[1].trim()),
-			    				array[2].trim(),array[3].trim(),array[4].trim() ));
+			    		LOGGER.debug("ref='{}' file={} batchMax={} prd={} post={} pres={}",array[0].trim(),file,array[1].trim(),array[2].trim(),array[3].trim(),array[4].trim());
+			    		SelectorLookup sel = new SelectorLookup(file, array[0].trim(),Integer.parseInt(array[1].trim()),
+			    				array[2].trim(),array[3].trim(),array[4].trim());
+			    		
+			    		LOGGER.debug("Selector object created succesfully.");
+			    		lookup.put(array[0].trim(), sel );
+			    		LOGGER.debug("Created new selector entry, size now {}",lookup.size());
 			    	}
+			    	
 			    }
 			} catch (FileNotFoundException e) {
 				LOGGER.fatal("Lookup file error: '{}'",e.getMessage());
 				System.exit(1);
 			} catch (IOException e) {
+				LOGGER.fatal("Lookup file error: '{}'",e.getMessage());
+				System.exit(1);
+			} catch (NullPointerException e){
 				LOGGER.fatal("Lookup file error: '{}'",e.getMessage());
 				System.exit(1);
 			}
@@ -48,8 +62,10 @@ public class SelectorLookup {
 	}
 	
 	public SelectorLookup(String file, String ref, int batchMax, String productionConfig, String postageConfig, String presentationConfig){
+		LOGGER.debug("Creating selector object");
 		this.filePath=file;
 		if(validateLookupEntry( batchMax, productionConfig, postageConfig, presentationConfig)){
+			LOGGER.debug("Creating selector object..");
 			this.ref=ref;
 			this.batchMax=batchMax;
 			this.postageConfig=postageConfig;
@@ -64,20 +80,26 @@ public class SelectorLookup {
 	
 	private boolean validateLookupEntry(int batchMax, String productionConfig, String postageConfig, String presentationConfig){
 		boolean result = true;
+		String file ="";
 		if( !(isNumeric("" + batchMax)) ){
 			result = false;
 			LOGGER.error("Field 'batchMax' has erroneous value '{}'",batchMax);
 		}
-		
-		if( !(new File(CONFIG.getProperty("productionConfigPath") + productionConfig + CONFIG.getProperty("productionFileSuffix")).exists()) ){
+		file = CONFIG.getProperty("productionConfigPath") + productionConfig + CONFIG.getProperty("productionFileSuffix");
+		LOGGER.debug("Checking for file '{}'",file);
+		if( !(new File(file).exists()) ){
 			result = false;
 			LOGGER.error("File '{}' doesn't exist",CONFIG.getProperty("productionConfigPath") + productionConfig + CONFIG.getProperty("productionFileSuffix"));
 		}
-		if( !(new File(CONFIG.getProperty("postageConfigPath") + postageConfig + CONFIG.getProperty("postageFileSuffix")).exists()) ){
+		file = CONFIG.getProperty("postageConfigPath") + postageConfig + CONFIG.getProperty("postageFileSuffix");
+		LOGGER.debug("Checking for file '{}'",file);
+		if( !(new File(file).exists()) ){
 			result = false;
 			LOGGER.error("File '{}' doesn't exist",CONFIG.getProperty("postageConfigPath") + postageConfig + CONFIG.getProperty("postageFileSuffix"));
 		}
-		if( !(new File(CONFIG.getProperty("presentationPriorityConfigPath") + presentationConfig + CONFIG.getProperty("presentationPriorityFileSuffix")).exists()) ){
+		file = CONFIG.getProperty("presentationPriorityConfigPath") + presentationConfig + CONFIG.getProperty("presentationPriorityFileSuffix");
+		LOGGER.debug("Checking for file '{}'",file);
+		if( !(new File(file).exists()) ){
 			result = false;
 			LOGGER.error("File '{}' doesn't exist",CONFIG.getProperty("presentationPriorityConfigPath") + presentationConfig + CONFIG.getProperty("presentationPriorityFileSuffix"));
 		}

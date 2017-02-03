@@ -60,6 +60,7 @@ public class Main {
 		}
 		String lookupFile=CONFIG.getProperty("lookupFile");
 		if( new File(lookupFile).exists()){
+			LOGGER.debug("lookupfile='{}' Config='{}",lookupFile,CONFIG.size());
 			lookup = new SelectorLookup(lookupFile, CONFIG);
 		}else{
 			LOGGER.fatal("Lookup file='{}' doesn't exist",lookupFile);
@@ -123,6 +124,8 @@ public class Main {
 			reqFields.add(postageConfigPath + ",postageConfigPath,N");
 			String postageFileSuffix = CONFIG.getProperty("postageFileSuffix");
 			reqFields.add(postageFileSuffix + ",postageFileSuffix,N");
+			String sortField = CONFIG.getProperty("sortField");
+			reqFields.add(sortField + ",sortField,Y");
 			
 			for(String str : reqFields){
 				String[] split = str.split(",");
@@ -162,12 +165,13 @@ public class Main {
 					}
 					LOGGER.info("Presentation priority map '{}' contains {} values",presConfig, presLookup.size());
 					
-					pc = new ProductionConfiguration(postageConfigPath + lookup.get(record.get(selectorRef)).getProductionConfig() + postageFileSuffix );
+					pc = new ProductionConfiguration(productionConfigPath + lookup.get(record.get(selectorRef)).getProductionConfig() + productionFileSuffix );
 					
 					firstCustomer=false;
 				}
 				Customer customer = new Customer(
 						record.get(docRef),
+						record.get(sortField),
 						record.get(selectorRef),
 						record.get(lang),
 						record.get(stat),
@@ -200,16 +204,28 @@ public class Main {
 				System.exit(1);
 			}
 			
+			LOGGER.debug("Pre-sort succesful");
 			CalculateLocation cl = new CalculateLocation(customers, lookup, pc);
 			cl.calculate();
 		
+			
+			
+			
+			
 			try{
 				//SORT HERE
 				Collections.sort(customers, new CustomerComparatorWithLocation());
 			}catch (Exception e){
 				LOGGER.fatal("Error when sorting: '{}'",e.getMessage());
+				e.printStackTrace();
 				System.exit(1);
 			}
+			
+			/*for (Customer customer : customers){
+				//printer.printRecord((Object[])customer.print());
+				printer.printRecord(customer);
+			}
+			System.exit(0);*/
 			
 			BatchEngine be = new BatchEngine(jid, customers, lookup, CONFIG);
 			be.batch();

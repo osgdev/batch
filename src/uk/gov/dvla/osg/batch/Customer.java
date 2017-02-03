@@ -2,12 +2,13 @@ package uk.gov.dvla.osg.batch;
 
 public class Customer {
 
-	private String groupId, docRef, selectorRef, lang, site, stationery, batchType, subBatch, jid, fleetNo, paperSize, msc;
+	private String groupId, docRef, selectorRef, lang, site, stationery, batchType, subBatch, jid, fleetNo, paperSize, msc, sortField;
 	private int sequence, batchSequence;
 	private Integer presentationPriority;
 	
-	public Customer(String docRef, String ref, String lang, String stationery, String batchType, String subBatch, String fleetNo, String groupId, String paperSize, String msc){
+	public Customer(String docRef, String sortField, String ref, String lang, String stationery, String batchType, String subBatch, String fleetNo, String groupId, String paperSize, String msc){
 		this.docRef=docRef;
+		this.sortField=sortField;
 		this.selectorRef=ref;
 		this.lang=lang;
 		this.stationery=stationery;
@@ -103,6 +104,23 @@ public class Customer {
 	public void setSequence(int sequence) {
 		this.sequence = sequence;
 	}
+	
+	public String getPaperSize() {
+		return paperSize;
+	}
+
+	public void setPaperSize(String paperSize) {
+		this.paperSize = paperSize;
+	}
+
+	public String getSortField() {
+		return sortField;
+	}
+
+	public void setSortField(String sortField) {
+		this.sortField = sortField;
+	}
+
 	public String[] print(){
 		String[] str = {this.docRef,this.site,this.jid};
 		return str;

@@ -17,51 +17,55 @@ public class ProductionConfiguration {
 	
 	public ProductionConfiguration(String filename){
 		this.filename=filename;
+		LOGGER.debug("Validating file '{}'",filename);
 		parseConfig(filename);
 	}
 	
 	private void parseConfig(String filename){
 		try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
 			String line;
-		    while ((line = br.readLine()) != null) {
-		    	String[] split = line.split("=");
-		    	String attribute = split[0];
-		    	String value = split[1];
-		    	if( "site.english.fleet".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.englishFleet=value;
-		    	} else if ( "site.welsh.fleet".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.welshFleet=value;
-		    	} else if ( "site.english.multi".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.englishMulti=value;
-		    	} else if ( "site.welsh.multi".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.welshMulti=value;
-		    	} else if ( "site.english.unsorted".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.englishUnsorted=value;
-		    	} else if ( "site.welsh.unsorted".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.welshUnsorted=value;
-		    	} else if ( "site.english.sorted".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.englishSorted=value;
-		    	} else if ( "site.welsh.sorted".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.welshSorted=value;
-		    	} else if ( "site.english.clerical".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.englishClerical=value;
-		    	} else if ( "site.welsh.clerical".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.welshClerical=value;
-		    	} else if ( "site.english.reject".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.englishReject=value;
-		    	} else if ( "site.welsh.reject".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.welshReject=value;
-		    	} else if ( "site.english.reprint".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.englishReprint=value;
-		    	} else if ( "site.welsh.reprint".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.welshReprint=value;
-		    	} else if ( "site.mailing".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.mailingSite=value;
-		    	} else if ( "minimum.mailsort".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.minimumMailsort=value;
-		    	} else if ( "mailsort.preference.product".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
-		    		this.mailsortProduct=value;
+		    while (  ((line = br.readLine()) != null) ) {
+		    	if( !(line.startsWith("#")) ){
+		    		String[] split = line.split("=");
+			    	String attribute = split[0];
+			    	String value = split[1];
+			    	if( "site.english.fleet".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.englishFleet=value;
+			    	} else if ( "site.welsh.fleet".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.welshFleet=value;
+			    	} else if ( "site.english.multi".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.englishMulti=value;
+			    	} else if ( "site.welsh.multi".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.welshMulti=value;
+			    	} else if ( "site.english.unsorted".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.englishUnsorted=value;
+			    	} else if ( "site.welsh.unsorted".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.welshUnsorted=value;
+			    	} else if ( "site.english.sorted".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.englishSorted=value;
+			    	} else if ( "site.welsh.sorted".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.welshSorted=value;
+			    	} else if ( "site.english.clerical".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.englishClerical=value;
+			    	} else if ( "site.welsh.clerical".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.welshClerical=value;
+			    	} else if ( "site.english.reject".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.englishReject=value;
+			    	} else if ( "site.welsh.reject".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.welshReject=value;
+			    	} else if ( "site.english.reprint".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.englishReprint=value;
+			    	} else if ( "site.welsh.reprint".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.welshReprint=value;
+			    	} else if ( "site.mailing".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.mailingSite=value;
+			    	} else if ( "minimum.mailsort".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.minimumMailsort=value;
+			    	} else if ( "mailsort.preference.product".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.mailsortProduct=value;
+			    	}
 		    	}
+		    	
 		    }
 		} catch (FileNotFoundException e) {
 			LOGGER.fatal("Lookup file error: '{}'",e.getMessage());

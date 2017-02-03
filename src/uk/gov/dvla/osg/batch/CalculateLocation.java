@@ -40,14 +40,14 @@ public class CalculateLocation {
 		for(Customer customer : input){
 
 			switch (customer.getBatchType()) {
-				case "CODED":  
+				case "SORTED":  
 					if("E".equals(customer.getLang())){
 						codedE.add(customer);
 					}else{
 						codedW.add(customer);
 					};
 				break;
-				case "UNCODED": 
+				case "UNSORTED": 
 					if("E".equals(customer.getLang())){
 						uncodedE.add(customer);
 					}else{
@@ -93,8 +93,7 @@ public class CalculateLocation {
 		Integer wCodedToFf = null;
 		Integer eUncodedToFf = null;
 		Integer wUncodedToFf = null;
-		Integer codedNumberToFf = null;
-		Integer uncodedNumberToFf = null;
+
 		
 		for(Customer customer : input){
 			if(firstCustomer && lookup.get(customer.getSelectorRef()) == null){
@@ -107,11 +106,10 @@ public class CalculateLocation {
 					if( isNumeric(props.getEnglishSorted()) ){
 						if(eCodedToFf == null){
 							eCodedToFf = (int) ( codedE.size() * ( (float)Integer.parseInt(props.getEnglishSorted()) / 100 ) );
-							codedNumberToFf = eCodedToFf;
 							codedCount = 0;
-							LOGGER.info("Size of english coded= {}, FF set to {}",codedE.size(),codedNumberToFf );
+							LOGGER.info("Size of english coded= {}, FF set to {}",codedE.size(),eCodedToFf );
 						}
-						if (codedCount < codedNumberToFf){
+						if (codedCount < eCodedToFf){
 							customer.setSite("f");
 							codedCount ++;
 						}else{
@@ -128,11 +126,10 @@ public class CalculateLocation {
 					if( isNumeric(props.getWelshSorted()) ){
 						if(wCodedToFf == null){
 							wCodedToFf = (int) ( codedW.size() * ( (float)Integer.parseInt(props.getWelshSorted()) / 100 ) );
-							codedNumberToFf = wCodedToFf;
 							codedCount = 0;
-							LOGGER.info("Size of welsh coded= {}, FF set to {}",codedW.size(),codedNumberToFf );
+							LOGGER.info("Size of welsh coded= {}, FF set to {}",codedW.size(),wCodedToFf );
 						}
-						if (codedCount < codedNumberToFf){
+						if (codedCount < wCodedToFf){
 							customer.setSite("f");
 							codedCount ++;
 						}else{
@@ -152,11 +149,10 @@ public class CalculateLocation {
 					if( isNumeric(props.getEnglishUnsorted()) ){
 						if(eUncodedToFf == null){
 							eUncodedToFf = (int) ( uncodedE.size() * ( (float)Integer.parseInt(props.getEnglishUnsorted()) / 100 ) );
-							uncodedNumberToFf = eUncodedToFf;
 							uncodedCount = 0;
-							LOGGER.info("Size of english uncoded= {}, FF set to {}",uncodedE.size(),uncodedNumberToFf );
+							LOGGER.info("Size of english uncoded= {}, FF set to {}",uncodedE.size(),eUncodedToFf );
 						}
-						if (uncodedCount < uncodedNumberToFf){
+						if (uncodedCount < eUncodedToFf){
 							customer.setSite("f");
 							uncodedCount ++;
 						}else{
@@ -173,11 +169,10 @@ public class CalculateLocation {
 					if( isNumeric(props.getWelshUnsorted()) ){
 						if(wUncodedToFf == null){
 							wUncodedToFf = (int) ( uncodedW.size() * ( (float)Integer.parseInt(props.getWelshUnsorted()) / 100 ) );
-							uncodedNumberToFf = wUncodedToFf;
 							uncodedCount = 0;
-							LOGGER.info("Size of welsh uncoded= {}, FF set to {}",uncodedW.size(),uncodedNumberToFf );
+							LOGGER.info("Size of welsh uncoded= {}, FF set to {}",uncodedW.size(),wUncodedToFf );
 						}
-						if (uncodedCount < uncodedNumberToFf){
+						if (uncodedCount < wUncodedToFf){
 							customer.setSite("f");
 							uncodedCount ++;
 						}else{
@@ -198,7 +193,7 @@ public class CalculateLocation {
 					if( isNumeric(props.getEnglishFleet()) ){
 						if(eFleetGroupsToFf == null){
 							int numberToFf = (int) ( fleetE.size() * ( (float)Integer.parseInt(props.getEnglishFleet()) / 100 ) );
-							eFleetGroupsToFf = calculateGroupLocation(fleetE, numberToFf);
+							eFleetGroupsToFf = calculateGroupLocation(customer.getBatchType() + customer.getLang(),fleetE, numberToFf);
 						}
 						if (eFleetGroupsToFf.contains(customer.getGroupId())){
 							customer.setSite("f");
@@ -216,7 +211,7 @@ public class CalculateLocation {
 					if( isNumeric(props.getWelshFleet()) ){
 						if(wFleetGroupsToFf == null){
 							int numberToFf = (int) ( fleetW.size() * ( (float)Integer.parseInt(props.getWelshFleet()) / 100 ) );
-							wFleetGroupsToFf = calculateGroupLocation(fleetW, numberToFf);
+							wFleetGroupsToFf = calculateGroupLocation(customer.getBatchType() + customer.getLang(),fleetW, numberToFf);
 						}
 						if (wFleetGroupsToFf.contains(customer.getGroupId())){
 							customer.setSite("f");
@@ -237,7 +232,7 @@ public class CalculateLocation {
 					if( isNumeric(props.getEnglishClerical()) ){
 						if(eClericalGroupsToFf == null){
 							int numberToFf = (int) ( clericalE.size() * ( (float)Integer.parseInt(props.getEnglishClerical()) / 100 ) );
-							eClericalGroupsToFf = calculateGroupLocation(clericalE, numberToFf);
+							eClericalGroupsToFf = calculateGroupLocation(customer.getBatchType() + customer.getLang(),clericalE, numberToFf);
 						}
 						if (eClericalGroupsToFf.contains(customer.getGroupId())){
 							customer.setSite("f");
@@ -255,7 +250,7 @@ public class CalculateLocation {
 					if( isNumeric(props.getWelshClerical()) ){
 						if(wClericalGroupsToFf == null){
 							int numberToFf = (int) ( clericalW.size() * ( (float)Integer.parseInt(props.getWelshClerical()) / 100 ) );
-							wClericalGroupsToFf = calculateGroupLocation(fleetW, numberToFf);
+							wClericalGroupsToFf = calculateGroupLocation(customer.getBatchType() + customer.getLang(),fleetW, numberToFf);
 						}
 						if (wClericalGroupsToFf.contains(customer.getGroupId())){
 							customer.setSite("f");
@@ -278,7 +273,7 @@ public class CalculateLocation {
 					if( isNumeric(props.getEnglishMulti()) ){
 						if(eMultiGroupsToFf == null){
 							int numberToFf = (int) ( multiE.size() * ( (float)Integer.parseInt(props.getEnglishMulti()) / 100 ) );
-							eMultiGroupsToFf = calculateGroupLocation(multiE, numberToFf);
+							eMultiGroupsToFf = calculateGroupLocation(customer.getBatchType() + customer.getLang(),multiE, numberToFf);
 						}
 						if (eMultiGroupsToFf.contains(customer.getGroupId())){
 							customer.setSite("f");
@@ -296,7 +291,7 @@ public class CalculateLocation {
 					if( isNumeric(props.getWelshMulti()) ){
 						if(wMultiGroupsToFf == null){
 							int numberToFf = (int) ( multiW.size() * ( (float)Integer.parseInt(props.getWelshMulti()) / 100 ) );
-							wMultiGroupsToFf = calculateGroupLocation(multiW, numberToFf);
+							wMultiGroupsToFf = calculateGroupLocation(customer.getBatchType() + customer.getLang(),multiW, numberToFf);
 						}
 						if (wMultiGroupsToFf.contains(customer.getGroupId())){
 							customer.setSite("f");
@@ -319,8 +314,8 @@ public class CalculateLocation {
 	    return s.matches("[-+]?\\d*\\.?\\d+");  
 	}
 	
-	private Set<String> calculateGroupLocation(List<Customer> customers, int noToFf){
-		LOGGER.info("Calculating split for {} customers, number to Ff={}",customers.size(),noToFf);
+	private Set<String> calculateGroupLocation(String batchType,List<Customer> customers, int noToFf){
+		LOGGER.info("Calculating split for batch type {}, {} customers, number to Ff={}",batchType,customers.size(),noToFf);
 		Set<String> result = new HashSet<String>();
 		
 		//Create a list of groupId to sort
