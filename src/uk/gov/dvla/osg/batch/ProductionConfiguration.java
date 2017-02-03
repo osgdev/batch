@@ -13,6 +13,12 @@ public class ProductionConfiguration {
 	private String filename, englishFleet, welshFleet, englishMulti, welshMulti, englishUnsorted, welshUnsorted,
 		englishSorted, welshSorted, englishClerical, welshClerical, englishReject, welshReject, englishReprint,
 		welshReprint, mailingSite, minimumMailsort, mailsortProduct;
+	private int batchMaxEnglishFleet, batchMaxWelshFleet,batchMaxEnglishMulti, batchMaxWelshMulti, 
+		batchMaxEnglishUnsorted, batchMaxWelshUnsorted,batchMaxEnglishSorted, batchMaxWelshSorted, 
+		batchMaxEnglishClerical, batchMaxWelshClerical, batchMaxEnglishReject, batchMaxWelshReject, 
+		batchMaxEnglishReprint, batchMaxWelshReprint;
+	
+	
 	private static final Logger LOGGER = LogManager.getLogger(Main.class.getName());
 	
 	public ProductionConfiguration(String filename){
@@ -63,9 +69,36 @@ public class ProductionConfiguration {
 			    		this.minimumMailsort=value;
 			    	} else if ( "mailsort.preference.product".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
 			    		this.mailsortProduct=value;
+			    	} else if ( "batchMax.english.fleet".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxEnglishFleet=Integer.parseInt(value);
+			    	} else if ( "batchMax.welsh.fleet".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxWelshFleet=Integer.parseInt(value);
+			    	} else if ( "batchMax.english.multi".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxEnglishMulti=Integer.parseInt(value);
+			    	} else if ( "batchMax.welsh.multi".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxWelshMulti=Integer.parseInt(value);
+			    	} else if ( "batchMax.english.unsorted".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxEnglishUnsorted=Integer.parseInt(value);
+			    	} else if ( "batchMax.welsh.unsorted".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxWelshUnsorted=Integer.parseInt(value);
+			    	} else if ( "batchMax.english.sorted".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxEnglishSorted=Integer.parseInt(value);
+			    	} else if ( "batchMax.welsh.sorted".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxWelshSorted=Integer.parseInt(value);
+			    	} else if ( "batchMax.english.clerical".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxEnglishClerical=Integer.parseInt(value);
+			    	} else if ( "batchMax.welsh.clerical".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxWelshClerical=Integer.parseInt(value);
+			    	} else if ( "batchMax.english.reject".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxEnglishReject=Integer.parseInt(value);
+			    	} else if ( "batchMax.welsh.reject".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxWelshReject=Integer.parseInt(value);
+			    	} else if ( "batchMax.english.reprint".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxEnglishReprint=Integer.parseInt(value);
+			    	} else if ( "batchMax.welsh.reprint".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxWelshReprint=Integer.parseInt(value);
 			    	}
 		    	}
-		    	
 		    }
 		} catch (FileNotFoundException e) {
 			LOGGER.fatal("Lookup file error: '{}'",e.getMessage());
@@ -91,6 +124,11 @@ public class ProductionConfiguration {
 						!("XX".equalsIgnoreCase(val))){
 					result = false;
 				}
+			}
+		}
+		if( att.startsWith("batchMax") || att.startsWith("batchmax") || att.startsWith("BATCHMAX") ){
+			if( !(isNumeric(val)) ){
+				result = false;
 			}
 		}
 
@@ -253,5 +291,118 @@ public class ProductionConfiguration {
 	public void setMailsortProduct(String mailsortProduct) {
 		this.mailsortProduct = mailsortProduct;
 	}
+
+	public int getBatchMaxEnglishFleet() {
+		return batchMaxEnglishFleet;
+	}
+
+	public void setBatchMaxEnglishFleet(int batchMaxEnglishFleet) {
+		this.batchMaxEnglishFleet = batchMaxEnglishFleet;
+	}
+
+	public int getBatchMaxWelshFleet() {
+		return batchMaxWelshFleet;
+	}
+
+	public void setBatchMaxWelshFleet(int batchMaxWelshFleet) {
+		this.batchMaxWelshFleet = batchMaxWelshFleet;
+	}
+
+	public int getBatchMaxEnglishMulti() {
+		return batchMaxEnglishMulti;
+	}
+
+	public void setBatchMaxEnglishMulti(int batchMaxEnglishMulti) {
+		this.batchMaxEnglishMulti = batchMaxEnglishMulti;
+	}
+
+	public int getBatchMaxWelshMulti() {
+		return batchMaxWelshMulti;
+	}
+
+	public void setBatchMaxWelshMulti(int batchMaxWelshMulti) {
+		this.batchMaxWelshMulti = batchMaxWelshMulti;
+	}
+
+	public int getBatchMaxEnglishUnsorted() {
+		return batchMaxEnglishUnsorted;
+	}
+
+	public void setBatchMaxEnglishUnsorted(int batchMaxEnglishUnsorted) {
+		this.batchMaxEnglishUnsorted = batchMaxEnglishUnsorted;
+	}
+
+	public int getBatchMaxWelshUnsorted() {
+		return batchMaxWelshUnsorted;
+	}
+
+	public void setBatchMaxWelshUnsorted(int batchMaxWelshUnsorted) {
+		this.batchMaxWelshUnsorted = batchMaxWelshUnsorted;
+	}
+
+	public int getBatchMaxEnglishSorted() {
+		return batchMaxEnglishSorted;
+	}
+
+	public void setBatchMaxEnglishSorted(int batchMaxEnglishSorted) {
+		this.batchMaxEnglishSorted = batchMaxEnglishSorted;
+	}
+
+	public int getBatchMaxWelshSorted() {
+		return batchMaxWelshSorted;
+	}
+
+	public void setBatchMaxWelshSorted(int batchMaxWelshSorted) {
+		this.batchMaxWelshSorted = batchMaxWelshSorted;
+	}
+
+	public int getBatchMaxEnglishClerical() {
+		return batchMaxEnglishClerical;
+	}
+
+	public void setBatchMaxEnglishClerical(int batchMaxEnglishClerical) {
+		this.batchMaxEnglishClerical = batchMaxEnglishClerical;
+	}
+
+	public int getBatchMaxWelshClerical() {
+		return batchMaxWelshClerical;
+	}
+
+	public void setBatchMaxWelshClerical(int batchMaxWelshClerical) {
+		this.batchMaxWelshClerical = batchMaxWelshClerical;
+	}
+
+	public int getBatchMaxEnglishReject() {
+		return batchMaxEnglishReject;
+	}
+
+	public void setBatchMaxEnglishReject(int batchMaxEnglishReject) {
+		this.batchMaxEnglishReject = batchMaxEnglishReject;
+	}
+
+	public int getBatchMaxWelshReject() {
+		return batchMaxWelshReject;
+	}
+
+	public void setBatchMaxWelshReject(int batchMaxWelshReject) {
+		this.batchMaxWelshReject = batchMaxWelshReject;
+	}
+
+	public int getBatchMaxEnglishReprint() {
+		return batchMaxEnglishReprint;
+	}
+
+	public void setBatchMaxEnglishReprint(int batchMaxEnglishReprint) {
+		this.batchMaxEnglishReprint = batchMaxEnglishReprint;
+	}
+
+	public int getBatchMaxWelshReprint() {
+		return batchMaxWelshReprint;
+	}
+
+	public void setBatchMaxWelshReprint(int batchMaxWelshReprint) {
+		this.batchMaxWelshReprint = batchMaxWelshReprint;
+	}
+	
 	
 }

@@ -227,11 +227,11 @@ public class Main {
 			}
 			System.exit(0);*/
 			
-			BatchEngine be = new BatchEngine(jid, customers, lookup, CONFIG);
+			BatchEngine be = new BatchEngine(jid, customers, lookup, pc);
 			be.batch();
 			for (Customer customer : customers){
-				//printer.printRecord((Object[])customer.print());
-				printer.printRecord(customer);
+				printer.printRecord((Object[])customer.print());
+				//printer.printRecord(customer);
 			}
 			csvFileParser.close();
 			printer.close();

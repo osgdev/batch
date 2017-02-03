@@ -14,14 +14,14 @@ public class BatchEngine {
 	private static final Logger LOGGER = LogManager.getLogger(Main.class.getName());
 	private List<Customer> input;
 	private SelectorLookup lookup;
-	private Properties props;
+	private ProductionConfiguration pc;
 	private String parentJid;
 	
-	public BatchEngine(String parentJid, List<Customer> input, SelectorLookup lookup, Properties props){
+	public BatchEngine(String parentJid, List<Customer> input, SelectorLookup lookup, ProductionConfiguration pc){
 		this.parentJid=parentJid;
 		this.input=input;
 		this.lookup=lookup;
-		this.props=props;
+		this.pc=pc;
 	}
 	
 	public void batch(){
@@ -38,6 +38,33 @@ public class BatchEngine {
 				prev = customer;
 				batchMax = lookup.get(customer.getSelectorRef()).getBatchMax();
 				firstCustomer=false;
+			}
+			if( "E".equalsIgnoreCase(customer.getLang()) ){
+				switch (customer.getBatchType()) {
+					case "SORTED" : batchMax = pc.getBatchMaxEnglishSorted();
+					break;
+					case "UNSORTED" : batchMax = pc.getBatchMaxEnglishUnsorted();
+					break;
+					case "FLEET" : batchMax = pc.getBatchMaxEnglishFleet();
+					break;
+					case "CLERICAL" : batchMax = pc.getBatchMaxEnglishClerical();
+					break;
+					case "MULTI" : batchMax = pc.getBatchMaxEnglishMulti();
+					break;
+				}
+			} else {
+				switch (customer.getBatchType()) {
+					case "SORTED" : batchMax = pc.getBatchMaxWelshSorted();
+					break;
+					case "UNSORTED" : batchMax = pc.getBatchMaxWelshUnsorted();
+					break;
+					case "FLEET" : batchMax = pc.getBatchMaxWelshFleet();
+					break;
+					case "CLERICAL" : batchMax = pc.getBatchMaxWelshClerical();
+					break;
+					case "MULTI" : batchMax = pc.getBatchMaxWelshMulti();
+					break;
+				}
 			}
 			if( (prev.getLang().equals(customer.getLang()) ) && 
 					(prev.getBatchType().equals(customer.getBatchType())) &&
