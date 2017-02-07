@@ -43,6 +43,8 @@ public class BatchEngine {
 				switch (customer.getBatchType()) {
 					case "SORTED" : batchMax = pc.getBatchMaxEnglishSorted();
 					break;
+					case "SORTING" : batchMax = pc.getBatchMaxEnglishSorting();
+					break;
 					case "UNSORTED" : batchMax = pc.getBatchMaxEnglishUnsorted();
 					break;
 					case "FLEET" : batchMax = pc.getBatchMaxEnglishFleet();
@@ -55,6 +57,8 @@ public class BatchEngine {
 			} else {
 				switch (customer.getBatchType()) {
 					case "SORTED" : batchMax = pc.getBatchMaxWelshSorted();
+					break;
+					case "SORTING" : batchMax = pc.getBatchMaxWelshSorting();
 					break;
 					case "UNSORTED" : batchMax = pc.getBatchMaxWelshUnsorted();
 					break;

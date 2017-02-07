@@ -12,11 +12,11 @@ public class ProductionConfiguration {
 
 	private String filename, englishFleet, welshFleet, englishMulti, welshMulti, englishUnsorted, welshUnsorted,
 		englishSorted, welshSorted, englishClerical, welshClerical, englishReject, welshReject, englishReprint,
-		welshReprint, mailingSite, minimumMailsort, mailsortProduct;
+		welshReprint, mailingSite, minimumMailsort, mailsortProduct, englishSorting, welshSorting;
 	private int batchMaxEnglishFleet, batchMaxWelshFleet,batchMaxEnglishMulti, batchMaxWelshMulti, 
 		batchMaxEnglishUnsorted, batchMaxWelshUnsorted,batchMaxEnglishSorted, batchMaxWelshSorted, 
 		batchMaxEnglishClerical, batchMaxWelshClerical, batchMaxEnglishReject, batchMaxWelshReject, 
-		batchMaxEnglishReprint, batchMaxWelshReprint;
+		batchMaxEnglishReprint, batchMaxWelshReprint, batchMaxEnglishSorting , batchMaxWelshSorting;
 	
 	
 	private static final Logger LOGGER = LogManager.getLogger(Main.class.getName());
@@ -69,6 +69,10 @@ public class ProductionConfiguration {
 			    		this.minimumMailsort=value;
 			    	} else if ( "mailsort.preference.product".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
 			    		this.mailsortProduct=value;
+			    	} else if ( "site.english.sorting".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.englishSorting=value;
+			    	} else if ( "site.welsh.sorting".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.welshSorting=value;
 			    	} else if ( "batchMax.english.fleet".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
 			    		this.batchMaxEnglishFleet=Integer.parseInt(value);
 			    	} else if ( "batchMax.welsh.fleet".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
@@ -97,6 +101,10 @@ public class ProductionConfiguration {
 			    		this.batchMaxEnglishReprint=Integer.parseInt(value);
 			    	} else if ( "batchMax.welsh.reprint".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
 			    		this.batchMaxWelshReprint=Integer.parseInt(value);
+			    	} else if ( "batchMax.english.sorting".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxEnglishSorting=Integer.parseInt(value);
+			    	} else if ( "batchMax.welsh.sorting".equalsIgnoreCase(attribute) && isValid(attribute, value) ){
+			    		this.batchMaxWelshSorting=Integer.parseInt(value);
 			    	}
 		    	}
 		    }
@@ -402,6 +410,38 @@ public class ProductionConfiguration {
 
 	public void setBatchMaxWelshReprint(int batchMaxWelshReprint) {
 		this.batchMaxWelshReprint = batchMaxWelshReprint;
+	}
+
+	public String getEnglishSorting() {
+		return englishSorting;
+	}
+
+	public void setEnglishSorting(String englishSorting) {
+		this.englishSorting = englishSorting;
+	}
+
+	public String getWelshSorting() {
+		return welshSorting;
+	}
+
+	public void setWelshSorting(String welshSorting) {
+		this.welshSorting = welshSorting;
+	}
+
+	public int getBatchMaxEnglishSorting() {
+		return batchMaxEnglishSorting;
+	}
+
+	public void setBatchMaxEnglishSorting(int batchMaxEnglishSorting) {
+		this.batchMaxEnglishSorting = batchMaxEnglishSorting;
+	}
+
+	public int getBatchMaxWelshSorting() {
+		return batchMaxWelshSorting;
+	}
+
+	public void setBatchMaxWelshSorting(int batchMaxWelshSorting) {
+		this.batchMaxWelshSorting = batchMaxWelshSorting;
 	}
 	
 	
