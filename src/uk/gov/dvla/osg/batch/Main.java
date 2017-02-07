@@ -148,9 +148,14 @@ public class Main {
 			boolean firstCustomer = true;
 			Map<String,Integer> presLookup = new HashMap<String,Integer>();
 			String presConfig ="";
+			String batchComparator = "";
 			for (CSVRecord record : records) {
 				if(firstCustomer){
 					//Create Map of presentation priorities
+					if (lookup.get(record.get(selectorRef)) == null){
+						LOGGER.fatal("Selector '{}' not found in lookup '{}'",selectorRef,lookupFile);
+						System.exit(1);
+					}
 					presConfig = presentationPriorityConfigPath + lookup.get(record.get(selectorRef)).getPresentationConfig() + presentationPriorityFileSuffix;
 					if( !(new File(presConfig).exists()) ){
 						LOGGER.fatal("Lookup file='{}' doesn't exist",presConfig);
@@ -182,11 +187,17 @@ public class Main {
 						record.get(paperSize),
 						record.get(mscField));
 				
-				if(presLookup.get(record.get(batchType)) == null){
-					LOGGER.error("Batch type '{}' not found in presentation config '{}' setting priotity to 999",record.get(batchType),presConfig);
+				
+				if( record.get(subBatch).isEmpty() ){
+					batchComparator = record.get(batchType);
+				}else{
+					batchComparator = record.get(batchType) + "_" + record.get(subBatch);
+				}
+				if(presLookup.get(batchComparator) == null){
+					LOGGER.error("Batch type '{}' not found in presentation config '{}' setting priotity to 999",batchComparator,presConfig);
 					customer.setPresentationPriority(999);
 				}else{
-					customer.setPresentationPriority(presLookup.get(record.get(batchType)));
+					customer.setPresentationPriority(presLookup.get(batchComparator));
 				}
 				
 				customers.add(customer);
