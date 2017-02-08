@@ -12,6 +12,9 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import uk.gov.dvla.osg.common.classes.ProductionConfiguration;
+import uk.gov.dvla.osg.common.classes.SelectorLookup;
+
 public class CalculateLocation {
 	private static final Logger LOGGER = LogManager.getLogger(Main.class.getName());
 	private List<Customer> input;

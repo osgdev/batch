@@ -10,6 +10,9 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import uk.gov.dvla.osg.common.classes.ProductionConfiguration;
+import uk.gov.dvla.osg.common.classes.SelectorLookup;
+
 public class BatchEngine {
 	private static final Logger LOGGER = LogManager.getLogger(Main.class.getName());
 	private List<Customer> input;
@@ -36,7 +39,6 @@ public class BatchEngine {
 		for (Customer customer : input){
 			if(firstCustomer){
 				prev = customer;
-				batchMax = lookup.get(customer.getSelectorRef()).getBatchMax();
 				firstCustomer=false;
 			}
 			if( "E".equalsIgnoreCase(customer.getLang()) ){

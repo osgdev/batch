@@ -21,6 +21,9 @@ import org.apache.commons.csv.QuoteMode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import uk.gov.dvla.osg.common.classes.ProductionConfiguration;
+import uk.gov.dvla.osg.common.classes.SelectorLookup;
+
 public class Main {
 	
 	private static final Logger LOGGER = LogManager.getLogger(Main.class.getName());
