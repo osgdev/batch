@@ -34,7 +34,7 @@ import uk.gov.dvla.osg.ukmail.resources.CreateUkMailResources;
 
 public class Main {
 	
-	private static final Logger LOGGER = LogManager.getLogger(Main.class.getName());
+	private static final Logger LOGGER = LogManager.getLogger();
 	private static final Properties CONFIG = new Properties();
 	static ArrayList<Customer> customers;
 

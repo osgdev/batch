@@ -8,7 +8,7 @@ import org.apache.logging.log4j.Logger;
 import uk.gov.dvla.osg.common.classes.Customer;
 
 public class CalculateEndOfGroups {
-	private static final Logger LOGGER = LogManager.getLogger(Main.class.getName());
+	private static final Logger LOGGER = LogManager.getLogger();
 	private List<Customer> input;
 	
 	public CalculateEndOfGroups(List<Customer> input){

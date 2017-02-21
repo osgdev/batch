@@ -17,7 +17,7 @@ import uk.gov.dvla.osg.common.classes.ProductionConfiguration;
 import uk.gov.dvla.osg.common.classes.SelectorLookup;
 
 public class CalculateLocation {
-	private static final Logger LOGGER = LogManager.getLogger(Main.class.getName());
+	private static final Logger LOGGER = LogManager.getLogger();
 	private List<Customer> input;
 	private SelectorLookup lookup;
 	private ProductionConfiguration props;
