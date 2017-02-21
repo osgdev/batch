@@ -2,6 +2,8 @@ package uk.gov.dvla.osg.batch;
 
 import java.util.Comparator;
 
+import uk.gov.dvla.osg.common.classes.Customer;
+
 public class CustomerComparator implements Comparator<Customer>{
 
 	@Override

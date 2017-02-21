@@ -5,6 +5,8 @@ import java.util.Comparator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import uk.gov.dvla.osg.common.classes.Customer;
+
 public class CustomerComparatorWithLocation implements Comparator<Customer>{
 	private static final Logger LOGGER = LogManager.getLogger(Main.class.getName());
 	@Override

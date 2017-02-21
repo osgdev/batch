@@ -12,6 +12,7 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import uk.gov.dvla.osg.common.classes.Customer;
 import uk.gov.dvla.osg.common.classes.ProductionConfiguration;
 import uk.gov.dvla.osg.common.classes.SelectorLookup;
 
@@ -29,13 +30,13 @@ public class CalculateLocation {
 	
 	public void calculate(){
 		
-		List<Customer> codedE = new ArrayList<Customer>();
-		List<Customer> uncodedE = new ArrayList<Customer>();
+		List<Customer> sortedE = new ArrayList<Customer>();
+		List<Customer> unsortedE = new ArrayList<Customer>();
 		List<Customer> fleetE = new ArrayList<Customer>();
 		List<Customer> clericalE = new ArrayList<Customer>(); 
 		List<Customer> multiE = new ArrayList<Customer>();
-		List<Customer> codedW = new ArrayList<Customer>();
-		List<Customer> uncodedW = new ArrayList<Customer>();
+		List<Customer> sortedW = new ArrayList<Customer>();
+		List<Customer> unsortedW = new ArrayList<Customer>();
 		List<Customer> fleetW = new ArrayList<Customer>();
 		List<Customer> clericalW = new ArrayList<Customer>(); 
 		List<Customer> multiW = new ArrayList<Customer>();
@@ -47,16 +48,16 @@ public class CalculateLocation {
 			switch (customer.getBatchType()) {
 				case "SORTED":  
 					if("E".equals(customer.getLang())){
-						codedE.add(customer);
+						sortedE.add(customer);
 					}else{
-						codedW.add(customer);
+						sortedW.add(customer);
 					};
 				break;
 				case "UNSORTED": 
 					if("E".equals(customer.getLang())){
-						uncodedE.add(customer);
+						unsortedE.add(customer);
 					}else{
-						uncodedW.add(customer);
+						unsortedW.add(customer);
 					};
 				break; 
 				case "FLEET": 
@@ -90,10 +91,10 @@ public class CalculateLocation {
 			}
 		}
 		
-		LOGGER.info("Batch contains:\nCODED E{} W{}\nUNCODED E{} W{}\nFLEET E{} W{}\nCLERICAL E{} W{}\nMULTI E{} W{}\nSORTING E{} W{}",
-				codedE.size(),codedW.size(), uncodedE.size(),uncodedW.size(),fleetE.size(),fleetW.size(),clericalE.size(),clericalW.size(),multiE.size(),multiW.size(),sortingE.size(),sortingW.size());
-		int codedCount = 0;
-		int uncodedCount = 0;
+		LOGGER.info("Batch contains:\nSORTED E{} W{}\nUNSORTED E{} W{}\nFLEET E{} W{}\nCLERICAL E{} W{}\nMULTI E{} W{}\nSORTING E{} W{}",
+				sortedE.size(),sortedW.size(), unsortedE.size(),unsortedW.size(),fleetE.size(),fleetW.size(),clericalE.size(),clericalW.size(),multiE.size(),multiW.size(),sortingE.size(),sortingW.size());
+		int sortedCount = 0;
+		int unsortedCount = 0;
 		Set<String> eFleetGroupsToFf = null;
 		Set<String> eClericalGroupsToFf = null;
 		Set<String> eMultiGroupsToFf = null;
@@ -101,10 +102,10 @@ public class CalculateLocation {
 		Set<String> wClericalGroupsToFf = null;
 		Set<String> wMultiGroupsToFf = null;
 		boolean firstCustomer = true;
-		Integer eCodedToFf = null;
-		Integer wCodedToFf = null;
-		Integer eUncodedToFf = null;
-		Integer wUncodedToFf = null;
+		Integer eSortedToFf = null;
+		Integer wSortedToFf = null;
+		Integer eUnsortedToFf = null;
+		Integer wUnsortedToFf = null;
 		Integer eSortingtoFf = null;
 		Integer wSortingtoFf = null;
 
@@ -118,14 +119,14 @@ public class CalculateLocation {
 			if( "SORTED".equals(customer.getBatchType()) ){
 				if( "E".equals(customer.getLang()) ){
 					if( isNumeric(props.getEnglishSorted()) ){
-						if(eCodedToFf == null){
-							eCodedToFf = (int) ( codedE.size() * ( (float)Integer.parseInt(props.getEnglishSorted()) / 100 ) );
-							codedCount = 0;
-							LOGGER.info("Size of english sorted= {}, FF set to {}",codedE.size(),eCodedToFf );
+						if(eSortedToFf == null){
+							eSortedToFf = (int) ( sortedE.size() * ( (float)Integer.parseInt(props.getEnglishSorted()) / 100 ) );
+							sortedCount = 0;
+							LOGGER.info("Size of english sorted= {}, FF set to {}",sortedE.size(),eSortedToFf );
 						}
-						if (codedCount < eCodedToFf){
+						if (sortedCount < eSortedToFf){
 							customer.setSite("f");
-							codedCount ++;
+							sortedCount ++;
 						}else{
 							customer.setSite("m");
 						}
@@ -138,14 +139,14 @@ public class CalculateLocation {
 					}
 				}else{
 					if( isNumeric(props.getWelshSorted()) ){
-						if(wCodedToFf == null){
-							wCodedToFf = (int) ( codedW.size() * ( (float)Integer.parseInt(props.getWelshSorted()) / 100 ) );
-							codedCount = 0;
-							LOGGER.info("Size of welsh sorted= {}, FF set to {}",codedW.size(),wCodedToFf );
+						if(wSortedToFf == null){
+							wSortedToFf = (int) ( sortedW.size() * ( (float)Integer.parseInt(props.getWelshSorted()) / 100 ) );
+							sortedCount = 0;
+							LOGGER.info("Size of welsh sorted= {}, FF set to {}",sortedW.size(),wSortedToFf );
 						}
-						if (codedCount < wCodedToFf){
+						if (sortedCount < wSortedToFf){
 							customer.setSite("f");
-							codedCount ++;
+							sortedCount ++;
 						}else{
 							customer.setSite("m");
 						}
@@ -161,14 +162,14 @@ public class CalculateLocation {
 			if( "UNSORTED".equals(customer.getBatchType()) ){
 				if( "E".equals(customer.getLang()) ){
 					if( isNumeric(props.getEnglishUnsorted()) ){
-						if(eUncodedToFf == null){
-							eUncodedToFf = (int) ( uncodedE.size() * ( (float)Integer.parseInt(props.getEnglishUnsorted()) / 100 ) );
-							uncodedCount = 0;
-							LOGGER.info("Size of english unsorted= {}, FF set to {}",uncodedE.size(),eUncodedToFf );
+						if(eUnsortedToFf == null){
+							eUnsortedToFf = (int) ( unsortedE.size() * ( (float)Integer.parseInt(props.getEnglishUnsorted()) / 100 ) );
+							unsortedCount = 0;
+							LOGGER.info("Size of english unsorted= {}, FF set to {}",unsortedE.size(),eUnsortedToFf );
 						}
-						if (uncodedCount < eUncodedToFf){
+						if (unsortedCount < eUnsortedToFf){
 							customer.setSite("f");
-							uncodedCount ++;
+							unsortedCount ++;
 						}else{
 							customer.setSite("m");
 						}
@@ -181,14 +182,14 @@ public class CalculateLocation {
 					}
 				}else{
 					if( isNumeric(props.getWelshUnsorted()) ){
-						if(wUncodedToFf == null){
-							wUncodedToFf = (int) ( uncodedW.size() * ( (float)Integer.parseInt(props.getWelshUnsorted()) / 100 ) );
-							uncodedCount = 0;
-							LOGGER.info("Size of welsh unsorted= {}, FF set to {}",uncodedW.size(),wUncodedToFf );
+						if(wUnsortedToFf == null){
+							wUnsortedToFf = (int) ( unsortedW.size() * ( (float)Integer.parseInt(props.getWelshUnsorted()) / 100 ) );
+							unsortedCount = 0;
+							LOGGER.info("Size of welsh unsorted= {}, FF set to {}",unsortedW.size(),wUnsortedToFf );
 						}
-						if (uncodedCount < wUncodedToFf){
+						if (unsortedCount < wUnsortedToFf){
 							customer.setSite("f");
-							uncodedCount ++;
+							unsortedCount ++;
 						}else{
 							customer.setSite("m");
 						}
@@ -285,13 +286,13 @@ public class CalculateLocation {
 				if( "E".equals(customer.getLang()) ){
 					if( isNumeric(props.getEnglishSorting()) ){
 						if(eSortingtoFf == null){
-							eSortingtoFf = (int) ( codedE.size() * ( (float)Integer.parseInt(props.getEnglishSorting()) / 100 ) );
-							codedCount = 0;
+							eSortingtoFf = (int) ( sortedE.size() * ( (float)Integer.parseInt(props.getEnglishSorting()) / 100 ) );
+							sortedCount = 0;
 							LOGGER.info("Size of english sorting= {}, FF set to {}",sortingE.size(),eSortingtoFf );
 						}
-						if (codedCount < eSortingtoFf){
+						if (sortedCount < eSortingtoFf){
 							customer.setSite("f");
-							codedCount ++;
+							sortedCount ++;
 						}else{
 							customer.setSite("m");
 						}
@@ -305,13 +306,13 @@ public class CalculateLocation {
 				}else{
 					if( isNumeric(props.getWelshSorting()) ){
 						if(wSortingtoFf == null){
-							wSortingtoFf = (int) ( codedW.size() * ( (float)Integer.parseInt(props.getWelshSorting()) / 100 ) );
-							codedCount = 0;
+							wSortingtoFf = (int) ( sortedW.size() * ( (float)Integer.parseInt(props.getWelshSorting()) / 100 ) );
+							sortedCount = 0;
 							LOGGER.info("Size of welsh sorting= {}, FF set to {}",sortingW.size(),wSortingtoFf );
 						}
-						if (codedCount < wSortingtoFf){
+						if (sortedCount < wSortingtoFf){
 							customer.setSite("f");
-							codedCount ++;
+							sortedCount ++;
 						}else{
 							customer.setSite("m");
 						}
