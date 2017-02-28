@@ -4,22 +4,15 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.csv.QuoteMode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -28,6 +21,7 @@ import uk.gov.dvla.osg.common.classes.EnvelopeLookup;
 import uk.gov.dvla.osg.common.classes.InsertLookup;
 import uk.gov.dvla.osg.common.classes.PostageConfiguration;
 import uk.gov.dvla.osg.common.classes.ProductionConfiguration;
+import uk.gov.dvla.osg.common.classes.RpdFileHandler;
 import uk.gov.dvla.osg.common.classes.SelectorLookup;
 import uk.gov.dvla.osg.common.classes.StationeryLookup;
 import uk.gov.dvla.osg.ukmail.resources.CreateUkMailResources;
@@ -80,7 +74,7 @@ public class Main {
 		}
 		
 		try {
-			//Define input csv
+			/*//Define input csv
 			FileReader in = new FileReader(input);
 			CSVFormat inputFormat= CSVFormat.RFC4180.withFirstRecordAsHeader();
 			
@@ -91,12 +85,14 @@ public class Main {
 		
 			//Get Headers from csv
 			CSVParser csvFileParser = new CSVParser(in, inputFormat);
-			Map<String, Integer> headers = csvFileParser.getHeaderMap();
+			Map<String, Integer> headers = csvFileParser.getHeaderMap();*/
 			
-			List<String> heads = new ArrayList<String>();
-			for(Map.Entry<String,Integer> en : headers.entrySet()){
+			RpdFileHandler fh = new RpdFileHandler(input, output);
+			
+			List<String> heads = fh.getHeaders();
+			/*for(Map.Entry<String,Integer> en : headers.entrySet()){
 				heads.add(en.getKey());
-			}
+			}*/
 
 			//LOGGER.debug(heads);
 			//reqFields is used to validate input, the Y signifies that the field should be present in the input file
@@ -143,7 +139,7 @@ public class Main {
 			reqFields.add(sortField + ",sortField,Y");
 			String name1Field = CONFIG.getProperty("name1Field");
 			reqFields.add(name1Field + ",name1Field,Y");
-			String name2Field = CONFIG.getProperty("name2Field");
+ 			String name2Field = CONFIG.getProperty("name2Field");
 			reqFields.add(name2Field + ",name2Field,Y");
 			String add1Field = CONFIG.getProperty("address1Field");
 			reqFields.add(add1Field + ",address1Field,Y");
@@ -167,6 +163,12 @@ public class Main {
 			reqFields.add(stationeryLookup + ",stationeryLookup,N");
 			String insertField = CONFIG.getProperty("insertField");
 			reqFields.add(insertField + ",insertField,Y");
+			String mmBarContent = CONFIG.getProperty("mailMarkBarcodeContent");
+			reqFields.add(mmBarContent + ",mailMarkBarcodeContent,Y");
+			String eogField = CONFIG.getProperty("eogField");
+			reqFields.add(eogField + ",eogField,Y");
+			String eotField = CONFIG.getProperty("eotField");
+			reqFields.add(eotField + ",eotField,Y");
 			
 			
 			for(String str : reqFields){
@@ -182,20 +184,105 @@ public class Main {
 				}
 			}
 			
-			printer.printRecord(docRef,site,jidField);
+			fh.write(fh.getHeaders());
 			
 			ProductionConfiguration productionConfig = null;
 			PostageConfiguration postageConfig = null;
 			
-			Iterable<CSVRecord> records = csvFileParser.getRecords();
-			boolean firstCustomer = true;
+			
+			File f = new File(input);
+            BufferedReader b = new BufferedReader(new FileReader(f));
+            String readLine = b.readLine();
+            //Read headers
+            LOGGER.debug("Read line as header '{}'",readLine);
+
+            HashMap<String,Integer> fileMap = fh.getMapping();
+            
+            boolean firstCustomer = true;
 			Map<String,Integer> presLookup = new HashMap<String,Integer>();
-			
-			
 			String presConfig ="";
 			String batchComparator = "";
 			String msc = "";
-			for (CSVRecord record : records) {
+			
+            while ((readLine = b.readLine()) != null) {
+            	String[] split = readLine.split("\\t");
+            	
+            	
+            	
+            	if(firstCustomer){
+					//Create Map of presentation priorities
+					if (lookup.get(split[fileMap.get(selectorRef)]) == null){
+						LOGGER.fatal("Selector '{}' not found in lookup '{}'",selectorRef,lookupFile);
+						System.exit(1);
+					}
+					presConfig = presentationPriorityConfigPath + lookup.get(split[fileMap.get(selectorRef)]).getPresentationConfig() + presentationPriorityFileSuffix;
+					if( !(new File(presConfig).exists()) ){
+						LOGGER.fatal("Lookup file='{}' doesn't exist",presConfig);
+						System.exit(1);
+					}
+					BufferedReader br = new BufferedReader(new FileReader(presConfig));  
+					String line = null; 
+					int k = 0;
+					while ((line = br.readLine()) != null){
+						presLookup.put(line.trim(), k);
+						k++;
+					}
+					LOGGER.info("Presentation priority map '{}' contains {} values",presConfig, presLookup.size());
+					
+					productionConfig = new ProductionConfiguration(productionConfigPath + lookup.get(split[fileMap.get(selectorRef)]).getProductionConfig() + productionFileSuffix );
+					postageConfig = new PostageConfiguration(postageConfigPath + lookup.get(split[fileMap.get(selectorRef)]).getPostageConfig() + postageFileSuffix );
+					firstCustomer=false;
+				}
+				
+				msc = split[fileMap.get(mscField)];
+				
+				Customer customer = new Customer(
+						split[fileMap.get(docRef)],
+						split[fileMap.get(sortField)],
+						split[fileMap.get(selectorRef)],
+						split[fileMap.get(lang)],
+						split[fileMap.get(stat)],
+						split[fileMap.get(batchType)],
+						split[fileMap.get(subBatch)],
+						split[fileMap.get(fleetNo)],
+						split[fileMap.get(groupId)],
+						split[fileMap.get(paperSize)],
+						msc);
+				
+				customer.setName1(split[fileMap.get(name1Field)]);
+				customer.setName2(split[fileMap.get(name2Field)]);
+				customer.setAdd1(split[fileMap.get(add1Field)]);
+				customer.setAdd2(split[fileMap.get(add2Field)]);
+				customer.setAdd3(split[fileMap.get(add3Field)]);
+				customer.setAdd4(split[fileMap.get(add4Field)]);
+				customer.setAdd5(split[fileMap.get(add5Field)]);
+				customer.setPostcode(split[fileMap.get(pcField)]);
+				customer.setDps(split[fileMap.get(dpsField)]);
+				customer.setInsertRef(split[fileMap.get(insertField)]);
+				
+				
+				if( split[fileMap.get(subBatch)] == null || split[fileMap.get(subBatch)].isEmpty() ){
+					batchComparator = split[fileMap.get(batchType)];
+				}else{
+					batchComparator = split[fileMap.get(batchType)] + "_" + split[fileMap.get(subBatch)];
+				}
+				if(presLookup.get(batchComparator) == null){
+					LOGGER.error("Batch type '{}' not found in presentation config '{}' setting priotity to 999",batchComparator,presConfig);
+					customer.setPresentationPriority(999);
+				}else{
+					customer.setPresentationPriority(presLookup.get(batchComparator));
+				}
+				
+				customer.setNoOfPages(Integer.parseInt(split[fileMap.get(noOfPages)]));
+				
+				customers.add(customer);
+            }
+            b.close();
+            	
+			
+			//Iterable<CSVRecord> records = csvFileParser.getRecords();
+			
+			/*for (CSVRecord record : records) {
 				if(firstCustomer){
 					//Create Map of presentation priorities
 					if (lookup.get(record.get(selectorRef)) == null){
@@ -264,7 +351,7 @@ public class Main {
 				
 				customers.add(customer);
 				
-			}
+			}*/
 			LOGGER.info("Created {} customers",customers.size());
 			
 			try{
@@ -330,6 +417,9 @@ public class Main {
 			BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig, actualMailProduct);
 			be.batch();
 			
+			
+			
+			
 			/*for (Customer customer : customers){
 				//printer.printRecord((Object[])customer.print());
 				printer.printRecord(customer);
@@ -341,13 +431,68 @@ public class Main {
 			
 			CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct );
 			
+			BufferedReader bu = new BufferedReader(new FileReader(f));
+			readLine = b.readLine();
+			List<String> list = new ArrayList<String>();
 			
-			for (Customer customer : customers){
+			int i = 0;
+			int jidIdx = fileMap.get(jidField);
+			int siteIdx = fileMap.get(site);
+			int eogIdx = fileMap.get(eogField);
+			int eotIdx = fileMap.get(eotField);
+			int mailContentIdx = fileMap.get(mmBarContent);
+			
+			
+			while ((readLine = b.readLine()) != null) {
+				String[] split = readLine.split("\\t");
+				list.clear();
+				for( int x = 0; x < split.length; x ++ ){
+					if( x == jidIdx ){
+						if( customers.get(i).getJid() != null){
+							list.add(customers.get(i).getJid());
+						} else{
+							list.add("");
+						}
+					} else if( x == siteIdx ){
+						if( customers.get(i).getSite() != null){
+							list.add("" + customers.get(i).getSite());
+						}else{
+							list.add("");
+						}
+					} else if( x ==  eogIdx){
+						if( customers.get(i).getEog() != null){
+							list.add("" + customers.get(i).getEog());
+						}else{
+							list.add("");
+						}
+					}else if( x == eotIdx ){
+						if( customers.get(i).getEot() != null){
+							list.add("" + customers.get(i).getEot());
+						}else{
+							list.add("");
+						}
+					}else if( x == mailContentIdx ){
+						if( customers.get(i).getMmBarcodeContent() != null){
+							list.add("" + customers.get(i).getMmBarcodeContent());
+						}else{
+							list.add("");
+						}
+					} else {
+						list.add(split[x]);
+					}
+				}
+				fh.write(list);
+				i++;
+			}
+            fh.closeFile();
+			
+			
+			/*for (Customer customer : customers){
 				//printer.printRecord((Object[])customer.print());
 				printer.printRecord(customer);
-			}
-			csvFileParser.close();
-			printer.close();
+			}*/
+			//csvFileParser.close();
+			//printer.close();
 			
 		} catch (IOException e) {
 			LOGGER.fatal(e.getMessage());
