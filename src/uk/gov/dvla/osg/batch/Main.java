@@ -205,7 +205,7 @@ public class Main {
 			String msc = "";
 			
             while ((readLine = b.readLine()) != null) {
-            	String[] split = readLine.split("\\t");
+            	String[] split = readLine.split("\\t",-1);
             	
             	
             	
@@ -444,7 +444,7 @@ public class Main {
 			
 			
 			while ((readLine = b.readLine()) != null) {
-				String[] split = readLine.split("\\t");
+				String[] split = readLine.split("\\t",-1);
 				list.clear();
 				for( int x = 0; x < split.length; x ++ ){
 					if( x == jidIdx ){
