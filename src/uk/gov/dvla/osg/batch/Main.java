@@ -432,7 +432,7 @@ public class Main {
 			CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct );
 			
 			BufferedReader bu = new BufferedReader(new FileReader(f));
-			readLine = b.readLine();
+			readLine = bu.readLine();
 			List<String> list = new ArrayList<String>();
 			
 			int i = 0;
@@ -443,7 +443,7 @@ public class Main {
 			int mailContentIdx = fileMap.get(mmBarContent);
 			
 			
-			while ((readLine = b.readLine()) != null) {
+			while ((readLine = bu.readLine()) != null) {
 				String[] split = readLine.split("\\t",-1);
 				list.clear();
 				for( int x = 0; x < split.length; x ++ ){
