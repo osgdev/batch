@@ -169,6 +169,14 @@ public class Main {
 			reqFields.add(eogField + ",eogField,Y");
 			String eotField = CONFIG.getProperty("eotField");
 			reqFields.add(eotField + ",eotField,Y");
+			String seqField = CONFIG.getProperty("childSequence");
+			reqFields.add(seqField + ",childSequence,Y");
+			String outEnv = CONFIG.getProperty("outerEnvelope");
+			reqFields.add(outEnv + ",outerEnvelope,Y");
+			String mailingProduct = CONFIG.getProperty("mailingProduct");
+			reqFields.add(mailingProduct + ",mailingProduct,Y");
+			
+			
 			
 			
 			for(String str : reqFields){
@@ -203,6 +211,7 @@ public class Main {
 			String presConfig ="";
 			String batchComparator = "";
 			String msc = "";
+			int custCounter=0;
 			
             while ((readLine = b.readLine()) != null) {
             	String[] split = readLine.split("\\t",-1);
@@ -236,7 +245,7 @@ public class Main {
 				
 				msc = split[fileMap.get(mscField)];
 				
-				Customer customer = new Customer(
+				Customer customer = new Customer(custCounter,
 						split[fileMap.get(docRef)],
 						split[fileMap.get(sortField)],
 						split[fileMap.get(selectorRef)],
@@ -276,82 +285,10 @@ public class Main {
 				customer.setNoOfPages(Integer.parseInt(split[fileMap.get(noOfPages)]));
 				
 				customers.add(customer);
+				custCounter++;
             }
             b.close();
             	
-			
-			//Iterable<CSVRecord> records = csvFileParser.getRecords();
-			
-			/*for (CSVRecord record : records) {
-				if(firstCustomer){
-					//Create Map of presentation priorities
-					if (lookup.get(record.get(selectorRef)) == null){
-						LOGGER.fatal("Selector '{}' not found in lookup '{}'",selectorRef,lookupFile);
-						System.exit(1);
-					}
-					presConfig = presentationPriorityConfigPath + lookup.get(record.get(selectorRef)).getPresentationConfig() + presentationPriorityFileSuffix;
-					if( !(new File(presConfig).exists()) ){
-						LOGGER.fatal("Lookup file='{}' doesn't exist",presConfig);
-						System.exit(1);
-					}
-					BufferedReader br = new BufferedReader(new FileReader(presConfig));  
-					String line = null; 
-					int k = 0;
-					while ((line = br.readLine()) != null){
-						presLookup.put(line.trim(), k);
-						k++;
-					}
-					LOGGER.info("Presentation priority map '{}' contains {} values",presConfig, presLookup.size());
-					
-					productionConfig = new ProductionConfiguration(productionConfigPath + lookup.get(record.get(selectorRef)).getProductionConfig() + productionFileSuffix );
-					postageConfig = new PostageConfiguration(postageConfigPath + lookup.get(record.get(selectorRef)).getPostageConfig() + postageFileSuffix );
-					firstCustomer=false;
-				}
-				
-				msc = record.get(mscField);
-				
-				Customer customer = new Customer(
-						record.get(docRef),
-						record.get(sortField),
-						record.get(selectorRef),
-						record.get(lang),
-						record.get(stat),
-						record.get(batchType),
-						record.get(subBatch),
-						record.get(fleetNo),
-						record.get(groupId),
-						record.get(paperSize),
-						msc);
-				
-				customer.setName1(record.get(name1Field));
-				customer.setName2(record.get(name2Field));
-				customer.setAdd1(record.get(add1Field));
-				customer.setAdd2(record.get(add2Field));
-				customer.setAdd3(record.get(add3Field));
-				customer.setAdd4(record.get(add4Field));
-				customer.setAdd5(record.get(add5Field));
-				customer.setPostcode(record.get(pcField));
-				customer.setDps(record.get(dpsField));
-				customer.setInsertRef(record.get(insertField));
-				
-				
-				if( record.get(subBatch).isEmpty() ){
-					batchComparator = record.get(batchType);
-				}else{
-					batchComparator = record.get(batchType) + "_" + record.get(subBatch);
-				}
-				if(presLookup.get(batchComparator) == null){
-					LOGGER.error("Batch type '{}' not found in presentation config '{}' setting priotity to 999",batchComparator,presConfig);
-					customer.setPresentationPriority(999);
-				}else{
-					customer.setPresentationPriority(presLookup.get(batchComparator));
-				}
-				
-				customer.setNoOfPages(Integer.parseInt(record.get(noOfPages)));
-				
-				customers.add(customer);
-				
-			}*/
 			LOGGER.info("Created {} customers",customers.size());
 			
 			try{
@@ -371,8 +308,30 @@ public class Main {
 			String actualMailProduct="";
 			if( "UNSORTED".equalsIgnoreCase(productionConfig.getMailsortProduct()) || cc.getTotalMailsortCount() < Integer.parseInt(productionConfig.getMinimumMailsort()) ){
 				actualMailProduct="UNSORTED";
+				for(Customer customer : customers){
+					//SET FINAL ENVELOPE
+					if("E".equalsIgnoreCase(customer.getLang()) ){
+						customer.setEnvelope(productionConfig.getEnvelopeEnglishUnsorted());
+					}else{
+						customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
+					}
+					//CHANGE BATCH TYPE TO UNSORTED FOR ALL SORTED
+					if("SORTED".equalsIgnoreCase(customer.getBatchType()) ){
+						customer.setBatchType("UNSORTED");
+					}
+					customer.setProduct(actualMailProduct);
+				}
 			} else if( "OCR".equalsIgnoreCase(productionConfig.getMailsortProduct()) ){
 				actualMailProduct="OCR";
+				for(Customer customer : customers){
+					//SET FINAL ENVELOPE
+					if("E".equalsIgnoreCase(customer.getLang()) ){
+						customer.setEnvelope(productionConfig.getEnvelopeEnglishOcr());
+					}else{
+						customer.setEnvelope(productionConfig.getEnvelopeWelshOcr());
+					}
+					customer.setProduct(actualMailProduct);
+				}
 			} else if( "MM".equalsIgnoreCase(productionConfig.getMailsortProduct()) ){
 				if( cc.getDpsAccuracy() < postageConfig.getUkmMinimumCompliance() ){
 					actualMailProduct="OCR";
@@ -380,10 +339,18 @@ public class Main {
 					actualMailProduct="MM";
 					//Apply default DPS
 					for(Customer customer : customers){
+						//SET DEFAULT DPS IF APPLICABLE
 						if( postageConfig.getUkmBatchTypes().contains(customer.getBatchType()) && 
 								(customer.getDps().isEmpty() || customer.getDps() == null) ){
 							customer.setDps("9Z");
 						}
+						//SET FINAL ENVELOPE
+						if("E".equalsIgnoreCase(customer.getLang()) ){
+							customer.setEnvelope(productionConfig.getEnvelopeEnglishMm());
+						}else{
+							customer.setEnvelope(productionConfig.getEnvelopeWelshMm());
+						}
+						customer.setProduct(actualMailProduct);
 					}
 				}
 			} else {
@@ -418,18 +385,18 @@ public class Main {
 			be.batch();
 			
 			
-			
-			
-			/*for (Customer customer : customers){
-				//printer.printRecord((Object[])customer.print());
-				printer.printRecord(customer);
-			}
-			csvFileParser.close();
-			printer.close();
-			System.exit(0);*/
-			
-			
 			CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct );
+			
+			
+			try{
+				//SORT BACK TO ORIGINAL ORDER HERE
+				Collections.sort(customers, new CustomerComparatorOriginalOrder());
+			}catch (Exception e){
+				LOGGER.fatal("Error when sorting: '{}'",e.getMessage());
+				System.exit(1);
+			}
+			
+			
 			
 			BufferedReader bu = new BufferedReader(new FileReader(f));
 			readLine = bu.readLine();
@@ -441,6 +408,9 @@ public class Main {
 			int eogIdx = fileMap.get(eogField);
 			int eotIdx = fileMap.get(eotField);
 			int mailContentIdx = fileMap.get(mmBarContent);
+			int seqFieldIdx = fileMap.get(seqField);
+			int outEnvIdx = fileMap.get(outEnv);
+			int mailingProductIdx = fileMap.get(mailingProduct);
 			
 			
 			while ((readLine = bu.readLine()) != null) {
@@ -477,7 +447,13 @@ public class Main {
 						}else{
 							list.add("");
 						}
-					} else {
+					}else if( x == seqFieldIdx ){
+						list.add("" + customers.get(i).getSequence());
+					}else if( x == outEnvIdx ){
+						list.add(customers.get(i).getEnvelope());
+					}else if( x == mailingProductIdx ){
+						list.add(customers.get(i).getProduct());
+					}else {
 						list.add(split[x]);
 					}
 				}
