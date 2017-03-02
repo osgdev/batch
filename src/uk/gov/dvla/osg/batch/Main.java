@@ -375,7 +375,7 @@ public class Main {
 			EnvelopeLookup el = new EnvelopeLookup(envelopeLookup);
 			InsertLookup il = new InsertLookup(insertLookup);
 			
-			CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers);
+			CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers, productionConfig);
 			eogs.calculate();
 			CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
 			cwas.calculate();
