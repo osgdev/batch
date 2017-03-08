@@ -54,13 +54,21 @@ public class BatchEngine {
 					(prev.getBatchType().equals(customer.getBatchType())) &&
 					(prev.getSubBatch().equals(customer.getSubBatch())) &&
 					(prev.getSite().equals(customer.getSite())) &&
-					(pageCount < batchMax)  ){
+					(pageCount < (batchMax + 1)) && 
+					(prev.getStationery().equals(customer.getStationery())) ){
 				//SAME BATCH
 				customer.setJid(parentJid + "." + j);
 			}else{
 				//NEW BATCH
 				if( isAdjustmentRequiredForLast25(cusIdx) ){
-					LOGGER.info("Adjustment required for customer '{}'",customer.getDocRef());
+					
+					String mscForAdjusting = input.get(cusIdx-1).getMsc();
+					LOGGER.info("Adjustment required for customer '{}', msc that needs adjusting={}",customer.getDocRef(),mscForAdjusting);
+					
+					
+					
+					
+					
 					j ++;
 					k=1;
 					pageCount = customer.getNoOfPages();

@@ -15,6 +15,7 @@ public class CustomerComparatorWithLocation implements Comparator<Customer>{
 		 * SORT ORDER IS:
 		 * LOCATION
 		 * LANGUAGE
+		 * STATIONERY
 		 * PRESENTATION_ORDER
 		 * SUB_BATCH
 		 * SORT_FIELD
@@ -35,6 +36,13 @@ public class CustomerComparatorWithLocation implements Comparator<Customer>{
         //LOGGER.debug("Comparing '{}' with '{}' result '{}' for refs '{}' & '{}'",o1.getLang(),o2.getLang(),langResult,o1.getDocRef(),o2.getDocRef());
         if (langResult != 0){
             return langResult;
+        }
+        
+     // Next by STATIONERY - stop if this gives a result.
+        int statResult = o1.getStationery().compareTo(o2.getStationery());
+        //LOGGER.debug("Comparing '{}' with '{}' result '{}' for refs '{}' & '{}'",o1.getLang(),o2.getLang(),langResult,o1.getDocRef(),o2.getDocRef());
+        if (statResult != 0){
+            return statResult;
         }
         
         // Next by PRESENTATION_ORDER - stop if this gives a result.

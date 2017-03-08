@@ -41,6 +41,8 @@ public class CalculateWeightsAndSizes {
 		float envelopeWeight = 0;
 		float totalSize = 0;
 		float totalWeight = 0;
+		int pageInGroupCount = 0;
+		ArrayList<Customer> group = new ArrayList<Customer>();
 		
 		for(Customer cus : customers){
 			if(!( cus.getInsertRef().isEmpty() )){
@@ -59,10 +61,23 @@ public class CalculateWeightsAndSizes {
 			totalSize= insertSize + paperSize + envelopeSize;
 			totalWeight = insertWeight + envelopeWeight + paperWeight;
 			
-			//LOGGER.info("Customer with doc ref '{}' size set to {}, weight set to {}",cus.getDocRef(),totalSize, totalWeight);
+			LOGGER.debug("Customer with doc ref '{}' size set to {}, weight set to {}",cus.getDocRef(),totalSize, totalWeight);
 			cus.setWeight(totalWeight);
 			cus.setSize(totalSize);
+			
+			//Calculate total pages in group
+			pageInGroupCount = pageInGroupCount + cus.getNoOfPages();
+			group.add(cus);
+			if( "X".equalsIgnoreCase(cus.getEog()) ){
+				for(Customer customer : group){
+					customer.setTotalPagesInGroup(pageInGroupCount);
+				}
+				pageInGroupCount=0;
+				group.clear();
+			}
+			
 		}
 		
 	}
+	
 }

@@ -32,8 +32,10 @@ public class CalculateEndOfGroups {
 				next = input.get(j);
 				maxPages = getMaxPages(cus);
 				if( !(cus.getGroupId() == null) && !(cus.getGroupId().isEmpty()) ){
+					
 					if( cus.getGroupId().equalsIgnoreCase(next.getGroupId()) ){
 						pageCount = pageCount + cus.getNoOfPages();
+						LOGGER.debug("Group ID set, page count={}, max pages={}, this plus next={}",pageCount,maxPages,(pageCount + next.getNoOfPages()));
 						if( (pageCount + next.getNoOfPages()) > maxPages ){
 							cus.setEog("X");
 							pageCount=0;
@@ -43,6 +45,7 @@ public class CalculateEndOfGroups {
 						pageCount=0;
 					}
 				}else{
+					LOGGER.debug("No group ID set, setting EOG to X");
 					cus.setEog("X");
 					pageCount=0;
 				}

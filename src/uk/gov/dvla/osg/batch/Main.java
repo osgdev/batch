@@ -74,27 +74,10 @@ public class Main {
 		}
 		
 		try {
-			/*//Define input csv
-			FileReader in = new FileReader(input);
-			CSVFormat inputFormat= CSVFormat.RFC4180.withFirstRecordAsHeader();
-			
-			//Define output csv
-			Appendable out = new FileWriter(output);
-			CSVFormat outputFormat = CSVFormat.RFC4180.withQuoteMode(QuoteMode.ALL);
-			CSVPrinter printer = new CSVPrinter(out, outputFormat);
-		
-			//Get Headers from csv
-			CSVParser csvFileParser = new CSVParser(in, inputFormat);
-			Map<String, Integer> headers = csvFileParser.getHeaderMap();*/
 			
 			RpdFileHandler fh = new RpdFileHandler(input, output);
 			
 			List<String> heads = fh.getHeaders();
-			/*for(Map.Entry<String,Integer> en : headers.entrySet()){
-				heads.add(en.getKey());
-			}*/
-
-			//LOGGER.debug(heads);
 			//reqFields is used to validate input, the Y signifies that the field should be present in the input file
 			List<String> reqFields = new ArrayList<String>();
 			String docRef = CONFIG.getProperty("documentReference");
@@ -112,7 +95,7 @@ public class Main {
 			String selectorRef = CONFIG.getProperty("lookupReferenceFieldName");
 			reqFields.add(selectorRef + ",lookupReferenceFieldName,Y");
 			String site = CONFIG.getProperty("siteFieldName");
-			reqFields.add(site + ",siteFieldName,N");
+			reqFields.add(site + ",siteFieldName,Y");
 			String fleetNo = CONFIG.getProperty("fleetNoFieldName");
 			reqFields.add(fleetNo + ",fleetNoFieldName,Y");
 			String groupId = CONFIG.getProperty("groupIdFieldName");
@@ -120,7 +103,7 @@ public class Main {
 			String paperSize = CONFIG.getProperty("paperSizeFieldName");
 			reqFields.add(paperSize + ",paperSizeFieldName,Y");
 			String jidField = CONFIG.getProperty("jobIdFieldName");
-			reqFields.add(jidField + ",jobIdFieldName,N");
+			reqFields.add(jidField + ",jobIdFieldName,Y");
 			String mscField = CONFIG.getProperty("mscFieldName");
 			reqFields.add(mscField + ",mscFieldName,Y");
 			String presentationPriorityConfigPath = CONFIG.getProperty("presentationPriorityConfigPath");
@@ -175,9 +158,10 @@ public class Main {
 			reqFields.add(outEnv + ",outerEnvelope,Y");
 			String mailingProduct = CONFIG.getProperty("mailingProduct");
 			reqFields.add(mailingProduct + ",mailingProduct,Y");
-			
-			
-			
+			String totalNumberOfPagesInGroupField = CONFIG.getProperty("totalNumberOfPagesInGroupField");
+			reqFields.add(totalNumberOfPagesInGroupField + ",totalNumberOfPagesInGroupField,Y");
+			String insertHopperCodeField = CONFIG.getProperty("insertHopperCodeField");
+			reqFields.add(insertHopperCodeField + ",insertHopperCodeField,Y");
 			
 			for(String str : reqFields){
 				String[] split = str.split(",");
@@ -197,7 +181,6 @@ public class Main {
 			ProductionConfiguration productionConfig = null;
 			PostageConfiguration postageConfig = null;
 			
-			
 			File f = new File(input);
             BufferedReader b = new BufferedReader(new FileReader(f));
             String readLine = b.readLine();
@@ -215,13 +198,10 @@ public class Main {
 			
             while ((readLine = b.readLine()) != null) {
             	String[] split = readLine.split("\\t",-1);
-            	
-            	
-            	
             	if(firstCustomer){
 					//Create Map of presentation priorities
 					if (lookup.get(split[fileMap.get(selectorRef)]) == null){
-						LOGGER.fatal("Selector '{}' not found in lookup '{}'",selectorRef,lookupFile);
+						LOGGER.fatal("Selector '{}' not found in lookup '{}'",split[fileMap.get(selectorRef)],lookupFile);
 						System.exit(1);
 					}
 					presConfig = presentationPriorityConfigPath + lookup.get(split[fileMap.get(selectorRef)]).getPresentationConfig() + presentationPriorityFileSuffix;
@@ -315,8 +295,10 @@ public class Main {
 					}else{
 						customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
 					}
+					
 					//CHANGE BATCH TYPE TO UNSORTED FOR ALL SORTED
 					if("SORTED".equalsIgnoreCase(customer.getBatchType()) ){
+						//LOGGER.info("Changing batch type '{}' to UNSORTED",customer.getBatchType());
 						customer.setBatchType("UNSORTED");
 					}
 					customer.setProduct(actualMailProduct);
@@ -325,16 +307,49 @@ public class Main {
 				actualMailProduct="OCR";
 				for(Customer customer : customers){
 					//SET FINAL ENVELOPE
-					if("E".equalsIgnoreCase(customer.getLang()) ){
-						customer.setEnvelope(productionConfig.getEnvelopeEnglishOcr());
-					}else{
-						customer.setEnvelope(productionConfig.getEnvelopeWelshOcr());
+					if("SORTED".equalsIgnoreCase(customer.getBatchType()) || "MULTI".equalsIgnoreCase(customer.getBatchType()) ){
+						if("E".equalsIgnoreCase(customer.getLang()) ){
+							customer.setEnvelope(productionConfig.getEnvelopeEnglishOcr());
+						}else{
+							customer.setEnvelope(productionConfig.getEnvelopeWelshOcr());
+						}
+						customer.setProduct(actualMailProduct);
+					}else if("UNSORTED".equalsIgnoreCase(customer.getBatchType())){
+						if("E".equalsIgnoreCase(customer.getLang()) ){
+							customer.setEnvelope(productionConfig.getEnvelopeEnglishUnsorted());
+						}else{
+							customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
+						}
+						customer.setProduct("UNSORTED");
+					}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) ){
+						customer.setEnvelope("");
+						customer.setProduct("");
 					}
-					customer.setProduct(actualMailProduct);
 				}
 			} else if( "MM".equalsIgnoreCase(productionConfig.getMailsortProduct()) ){
 				if( cc.getDpsAccuracy() < postageConfig.getUkmMinimumCompliance() ){
 					actualMailProduct="OCR";
+					for(Customer customer : customers){
+						//SET FINAL ENVELOPE
+						if("SORTED".equalsIgnoreCase(customer.getBatchType()) || "MULTI".equalsIgnoreCase(customer.getBatchType()) ){
+							if("E".equalsIgnoreCase(customer.getLang()) ){
+								customer.setEnvelope(productionConfig.getEnvelopeEnglishOcr());
+							}else{
+								customer.setEnvelope(productionConfig.getEnvelopeWelshOcr());
+							}
+							customer.setProduct(actualMailProduct);
+						}else if("UNSORTED".equalsIgnoreCase(customer.getBatchType())){
+							if("E".equalsIgnoreCase(customer.getLang()) ){
+								customer.setEnvelope(productionConfig.getEnvelopeEnglishUnsorted());
+							}else{
+								customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
+							}
+							customer.setProduct("UNSORTED");
+						}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) ){
+							customer.setEnvelope("");
+							customer.setProduct("");
+						}
+					}
 				} else {
 					actualMailProduct="MM";
 					//Apply default DPS
@@ -345,12 +360,24 @@ public class Main {
 							customer.setDps("9Z");
 						}
 						//SET FINAL ENVELOPE
-						if("E".equalsIgnoreCase(customer.getLang()) ){
-							customer.setEnvelope(productionConfig.getEnvelopeEnglishMm());
-						}else{
-							customer.setEnvelope(productionConfig.getEnvelopeWelshMm());
+						if("SORTED".equalsIgnoreCase(customer.getBatchType()) || "MULTI".equalsIgnoreCase(customer.getBatchType()) ){
+							if("E".equalsIgnoreCase(customer.getLang()) ){
+								customer.setEnvelope(productionConfig.getEnvelopeEnglishMm());
+							}else{
+								customer.setEnvelope(productionConfig.getEnvelopeWelshMm());
+							}
+							customer.setProduct(actualMailProduct);
+						}else if("UNSORTED".equalsIgnoreCase(customer.getBatchType())){
+							if("E".equalsIgnoreCase(customer.getLang()) ){
+								customer.setEnvelope(productionConfig.getEnvelopeEnglishUnsorted());
+							}else{
+								customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
+							}
+							customer.setProduct("UNSORTED");
+						}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) ){
+							customer.setEnvelope("");
+							customer.setProduct("");
 						}
-						customer.setProduct(actualMailProduct);
 					}
 				}
 			} else {
@@ -358,6 +385,15 @@ public class Main {
 				System.exit(1);
 			}
 			LOGGER.info("Run will be sent via {} product.",actualMailProduct);
+			
+			try{
+				//SORT HERE
+				Collections.sort(customers, new CustomerComparator());
+			}catch (Exception e){
+				LOGGER.fatal("Error when sorting: '{}'",e.getMessage());
+				System.exit(1);
+			}
+			
 			
 			CalculateLocation cl = new CalculateLocation(customers, lookup, productionConfig);
 			cl.calculate();
@@ -384,9 +420,7 @@ public class Main {
 			BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig, actualMailProduct);
 			be.batch();
 			
-			
 			CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct );
-			
 			
 			try{
 				//SORT BACK TO ORIGINAL ORDER HERE
@@ -395,8 +429,6 @@ public class Main {
 				LOGGER.fatal("Error when sorting: '{}'",e.getMessage());
 				System.exit(1);
 			}
-			
-			
 			
 			BufferedReader bu = new BufferedReader(new FileReader(f));
 			readLine = bu.readLine();
@@ -411,7 +443,9 @@ public class Main {
 			int seqFieldIdx = fileMap.get(seqField);
 			int outEnvIdx = fileMap.get(outEnv);
 			int mailingProductIdx = fileMap.get(mailingProduct);
-			
+			int batchTypeIdx = fileMap.get(batchType);
+			int totalNumberOfPagesInGroupFieldIdx = fileMap.get(totalNumberOfPagesInGroupField);
+			int insertHopperCodeFieldIdx = fileMap.get(insertHopperCodeField);
 			
 			while ((readLine = bu.readLine()) != null) {
 				String[] split = readLine.split("\\t",-1);
@@ -453,6 +487,12 @@ public class Main {
 						list.add(customers.get(i).getEnvelope());
 					}else if( x == mailingProductIdx ){
 						list.add(customers.get(i).getProduct());
+					}else if( x ==batchTypeIdx){
+						list.add(customers.get(i).getBatchType());
+					}else if( x == totalNumberOfPagesInGroupFieldIdx ){
+						list.add("" + customers.get(i).getTotalPagesInGroup());
+					}else if( x == insertHopperCodeFieldIdx && !(customers.get(i).getInsertRef().trim().isEmpty()) ){
+						list.add("" + il.getLookup().get(customers.get(i).getInsertRef().trim()).getHopperCode() );
 					}else {
 						list.add(split[x]);
 					}
@@ -461,14 +501,6 @@ public class Main {
 				i++;
 			}
             fh.closeFile();
-			
-			
-			/*for (Customer customer : customers){
-				//printer.printRecord((Object[])customer.print());
-				printer.printRecord(customer);
-			}*/
-			//csvFileParser.close();
-			//printer.close();
 			
 		} catch (IOException e) {
 			LOGGER.fatal(e.getMessage());

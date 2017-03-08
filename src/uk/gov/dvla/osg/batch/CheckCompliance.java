@@ -85,6 +85,7 @@ public class CheckCompliance {
 				for(Customer cus : customers){
 					if( mscsToAdjust.contains(cus.getLang() + cus.getBatchType() + cus.getSubBatch() + cus.getMsc()) ){
 						cus.setBatchType("UNSORTED");
+						
 					}
 				}
 			}
