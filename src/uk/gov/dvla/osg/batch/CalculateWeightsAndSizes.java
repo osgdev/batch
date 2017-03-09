@@ -69,8 +69,10 @@ public class CalculateWeightsAndSizes {
 			pageInGroupCount = pageInGroupCount + cus.getNoOfPages();
 			group.add(cus);
 			if( "X".equalsIgnoreCase(cus.getEog()) ){
+				
 				for(Customer customer : group){
 					customer.setTotalPagesInGroup(pageInGroupCount);
+					LOGGER.debug("Customer '{}' total pages set to {}",customer.getDocRef(),pageInGroupCount);
 				}
 				pageInGroupCount=0;
 				group.clear();
