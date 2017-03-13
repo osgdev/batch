@@ -3,10 +3,12 @@ package uk.gov.dvla.osg.batch;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,424 +31,113 @@ import uk.gov.dvla.osg.ukmail.resources.CreateUkMailResources;
 public class Main {
 	
 	private static final Logger LOGGER = LogManager.getLogger();
-	private static final Properties CONFIG = new Properties();
+	private static Properties CONFIG;
+	private static final int EXPECTED_NO_OF_ARGS = 5;
+	private static SelectorLookup lookup;
 	static ArrayList<Customer> customers;
+	static List<String> headerRecords;
+	private static RpdFileHandler fh;
+	static ProductionConfiguration productionConfig;
+	static PostageConfiguration postageConfig;
+	static HashMap<String,Integer> fileMap;
+	static String actualMailProduct;
+	
+	static StationeryLookup sl;
+	static EnvelopeLookup el;
+	static InsertLookup il;
+	
+	//Argument Strings
+	static String input, output, propsFile, jid, runNo, lookupFile;
+
+	//Properties strings
+	static String docRef, noOfPages, lang, stat, batchType, subBatch, selectorRef, site, fleetNo, groupId,
+	paperSize, jidField, mscField, presentationPriorityConfigPath, presentationPriorityFileSuffix,
+	productionConfigPath, productionFileSuffix, postageConfigPath, postageFileSuffix, sortField,
+	name1Field, name2Field, add1Field, add2Field, add3Field, add4Field, add5Field, pcField,
+	dpsField, insertLookup, envelopeLookup, stationeryLookup, insertField, mmBarContent, eogField,
+	eotField, seqField, outEnv, mailingProduct, totalNumberOfPagesInGroupField, insertHopperCodeField;
 
 	public static void main(String[] args) {
 		LOGGER.info("Starting uk.gov.dvla.osg.batch.Main");
+		validateNumberOfArgs(args);
+		assignArgs(args);
+		validateInputs();
+		loadPropertiesFile();
+		loadSelectorLookupFile();
 		
-		if( args.length != 5 ){
-			LOGGER.fatal("Incorrect number of args parsed '{}'. Args are 1.input file, 2.output file, 3.props file, 4.jobId, 5.Runno.",args.length);
+		fh = new RpdFileHandler(input, output);
+		headerRecords = fh.getHeaders();
+		
+		assignPropsFromPropsFile();
+		ensureRequiredPropsAreSet(headerRecords);
+		
+		generateCustomersFromInputFile();
+	
+		sortCustomers(customers, new CustomerComparator());
+		//Check compliance including:
+		//		MSC groups of under 25
+		//		Compliance level over 83%
+		CheckCompliance cc = new CheckCompliance(customers, productionConfig, postageConfig);
+		
+		calculateActualMailProduct(cc);
+		
+		sortCustomers(customers, new CustomerComparator());
+		
+		CalculateLocation cl = new CalculateLocation(customers, lookup, productionConfig);
+		cl.calculate();
+		
+		sortCustomers(customers, new CustomerComparatorWithLocation());
+		
+		sl = new StationeryLookup(stationeryLookup);
+		el = new EnvelopeLookup(envelopeLookup);
+		il = new InsertLookup(insertLookup);
+		
+		CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers, productionConfig);
+		eogs.calculate();
+		CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
+		cwas.calculate();
+		//Sets jobId, batchSequence and Sequence
+		BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig);
+		be.batch();
+			
+		CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct );
+		
+		sortCustomers(customers, new CustomerComparatorOriginalOrder());
+		
+		writeResultsToFile();
+		
+	}
+
+	private static void writeResultsToFile() {
+		BufferedReader bu = null;
+		String readLine;
+		try {
+			bu = new BufferedReader(new FileReader(new File(input)));
+			readLine = bu.readLine();
+		} catch (FileNotFoundException e) {
+			LOGGER.fatal("FileNotFoundException thrown when trying to open file '{}' error: '{}'", input, e.getMessage());
+			
+		} catch (IOException e) {
+			LOGGER.fatal("IOException thrown when trying to open file '{}' error: '{}'", input, e.getMessage());
 			System.exit(1);
 		}
 		
-		String input = args[0];
-		String output = args[1];
-		String propsFile = args[2];
-		String jid = args[3];
-		String runNo = args[4];
-		SelectorLookup lookup = null;
-		customers = new ArrayList<Customer>();
+		List<String> list = new ArrayList<String>();
 		
-		if( !(new File(args[0]).exists()) ){
-			LOGGER.fatal("File '{}' doesn't exist",args[0]);
-			System.exit(1);
-		}
-		
-		if(new File(propsFile).exists()){
-			try {
-				CONFIG.load(new FileInputStream(propsFile));
-			} catch (IOException e) {
-				LOGGER.fatal("Log file didn't load: '{}'",e.getMessage());
-				System.exit(1);
-			}
-		}else{
-			LOGGER.fatal("Log file: '{}' doesn't exist",propsFile);
-			System.exit(1);
-		}
-		String lookupFile=CONFIG.getProperty("lookupFile");
-		if( new File(lookupFile).exists()){
-			LOGGER.debug("lookupfile='{}' Config='{}",lookupFile,CONFIG.size());
-			lookup = new SelectorLookup(lookupFile, CONFIG);
-		}else{
-			LOGGER.fatal("Lookup file='{}' doesn't exist",lookupFile);
-			System.exit(1);
-		}
+		int i = 0;
+		int jidIdx = fileMap.get(jidField);
+		int siteIdx = fileMap.get(site);
+		int eogIdx = fileMap.get(eogField);
+		int eotIdx = fileMap.get(eotField);
+		int mailContentIdx = fileMap.get(mmBarContent);
+		int seqFieldIdx = fileMap.get(seqField);
+		int outEnvIdx = fileMap.get(outEnv);
+		int mailingProductIdx = fileMap.get(mailingProduct);
+		int batchTypeIdx = fileMap.get(batchType);
+		int totalNumberOfPagesInGroupFieldIdx = fileMap.get(totalNumberOfPagesInGroupField);
+		int insertHopperCodeFieldIdx = fileMap.get(insertHopperCodeField);
 		
 		try {
-			
-			RpdFileHandler fh = new RpdFileHandler(input, output);
-			
-			List<String> heads = fh.getHeaders();
-			//reqFields is used to validate input, the Y signifies that the field should be present in the input file
-			List<String> reqFields = new ArrayList<String>();
-			String docRef = CONFIG.getProperty("documentReference");
-			reqFields.add(docRef + ",documentReference,Y");
-			String noOfPages =CONFIG.getProperty("noOfPagesField");
-			reqFields.add(noOfPages + ",noOfPagesField,Y");
-			String lang = CONFIG.getProperty("languageFieldName");
-			reqFields.add(lang + ",languageFieldName,Y");
-			String stat = CONFIG.getProperty("stationeryFieldName");
-			reqFields.add(stat + ",stationeryFieldName,Y");
-			String batchType = CONFIG.getProperty("batchTypeFieldName");
-			reqFields.add(batchType + ",batchTypeFieldName,Y");
-			String subBatch = CONFIG.getProperty("subBatchTypeFieldName");
-			reqFields.add(subBatch + ",subBatchTypeFieldName,Y");
-			String selectorRef = CONFIG.getProperty("lookupReferenceFieldName");
-			reqFields.add(selectorRef + ",lookupReferenceFieldName,Y");
-			String site = CONFIG.getProperty("siteFieldName");
-			reqFields.add(site + ",siteFieldName,Y");
-			String fleetNo = CONFIG.getProperty("fleetNoFieldName");
-			reqFields.add(fleetNo + ",fleetNoFieldName,Y");
-			String groupId = CONFIG.getProperty("groupIdFieldName");
-			reqFields.add(groupId + ",groupIdFieldName,Y");
-			String paperSize = CONFIG.getProperty("paperSizeFieldName");
-			reqFields.add(paperSize + ",paperSizeFieldName,Y");
-			String jidField = CONFIG.getProperty("jobIdFieldName");
-			reqFields.add(jidField + ",jobIdFieldName,Y");
-			String mscField = CONFIG.getProperty("mscFieldName");
-			reqFields.add(mscField + ",mscFieldName,Y");
-			String presentationPriorityConfigPath = CONFIG.getProperty("presentationPriorityConfigPath");
-			reqFields.add(presentationPriorityConfigPath + ",presentationPriorityConfigPath,N");
-			String presentationPriorityFileSuffix = CONFIG.getProperty("presentationPriorityFileSuffix");
-			reqFields.add(presentationPriorityFileSuffix + ",presentationPriorityFileSuffix,N");
-			String productionConfigPath = CONFIG.getProperty("productionConfigPath");
-			reqFields.add(productionConfigPath + ",productionConfigPath,N");
-			String productionFileSuffix = CONFIG.getProperty("productionFileSuffix");
-			reqFields.add(productionFileSuffix + ",productionFileSuffix,N");
-			String postageConfigPath = CONFIG.getProperty("postageConfigPath");
-			reqFields.add(postageConfigPath + ",postageConfigPath,N");
-			String postageFileSuffix = CONFIG.getProperty("postageFileSuffix");
-			reqFields.add(postageFileSuffix + ",postageFileSuffix,N");
-			String sortField = CONFIG.getProperty("sortField");
-			reqFields.add(sortField + ",sortField,Y");
-			String name1Field = CONFIG.getProperty("name1Field");
-			reqFields.add(name1Field + ",name1Field,Y");
- 			String name2Field = CONFIG.getProperty("name2Field");
-			reqFields.add(name2Field + ",name2Field,Y");
-			String add1Field = CONFIG.getProperty("address1Field");
-			reqFields.add(add1Field + ",address1Field,Y");
-			String add2Field = CONFIG.getProperty("address2Field");
-			reqFields.add(add2Field + ",address2Field,Y");
-			String add3Field = CONFIG.getProperty("address3Field");
-			reqFields.add(add3Field + ",address3Field,Y");
-			String add4Field = CONFIG.getProperty("address4Field");
-			reqFields.add(add4Field + ",address4Field,Y");
-			String add5Field = CONFIG.getProperty("address5Field");
-			reqFields.add(add5Field + ",address5Field,Y");
-			String pcField = CONFIG.getProperty("postCodeField");
-			reqFields.add(pcField + ",postCodeField,Y");
-			String dpsField = CONFIG.getProperty("dpsField");
-			reqFields.add(dpsField + ",dpsField,Y");
-			String insertLookup = CONFIG.getProperty("insertLookup");
-			reqFields.add(insertLookup + ",insertLookup,N");
-			String envelopeLookup = CONFIG.getProperty("envelopeLookup");
-			reqFields.add(envelopeLookup + ",envelopeLookup,N");
-			String stationeryLookup = CONFIG.getProperty("stationeryLookup");
-			reqFields.add(stationeryLookup + ",stationeryLookup,N");
-			String insertField = CONFIG.getProperty("insertField");
-			reqFields.add(insertField + ",insertField,Y");
-			String mmBarContent = CONFIG.getProperty("mailMarkBarcodeContent");
-			reqFields.add(mmBarContent + ",mailMarkBarcodeContent,Y");
-			String eogField = CONFIG.getProperty("eogField");
-			reqFields.add(eogField + ",eogField,Y");
-			String eotField = CONFIG.getProperty("eotField");
-			reqFields.add(eotField + ",eotField,Y");
-			String seqField = CONFIG.getProperty("childSequence");
-			reqFields.add(seqField + ",childSequence,Y");
-			String outEnv = CONFIG.getProperty("outerEnvelope");
-			reqFields.add(outEnv + ",outerEnvelope,Y");
-			String mailingProduct = CONFIG.getProperty("mailingProduct");
-			reqFields.add(mailingProduct + ",mailingProduct,Y");
-			String totalNumberOfPagesInGroupField = CONFIG.getProperty("totalNumberOfPagesInGroupField");
-			reqFields.add(totalNumberOfPagesInGroupField + ",totalNumberOfPagesInGroupField,Y");
-			String insertHopperCodeField = CONFIG.getProperty("insertHopperCodeField");
-			reqFields.add(insertHopperCodeField + ",insertHopperCodeField,Y");
-			
-			for(String str : reqFields){
-				String[] split = str.split(",");
-				if ( "null".equals(split[0])){
-					LOGGER.fatal("Field '{}' not in properties file {}.",split[1],propsFile);
-					System.exit(1);
-				}else{
-					if( !(heads.contains(split[0])) && "Y".equals(split[2]) ){
-						LOGGER.fatal("Field '{}' not found in input file {}.",split[1],input);
-						System.exit(1);
-					}
-				}
-			}
-			
-			fh.write(fh.getHeaders());
-			
-			ProductionConfiguration productionConfig = null;
-			PostageConfiguration postageConfig = null;
-			
-			File f = new File(input);
-            BufferedReader b = new BufferedReader(new FileReader(f));
-            String readLine = b.readLine();
-            //Read headers
-            LOGGER.debug("Read line as header '{}'",readLine);
-
-            HashMap<String,Integer> fileMap = fh.getMapping();
-            
-            boolean firstCustomer = true;
-			Map<String,Integer> presLookup = new HashMap<String,Integer>();
-			String presConfig ="";
-			String batchComparator = "";
-			String msc = "";
-			int custCounter=0;
-			
-            while ((readLine = b.readLine()) != null) {
-            	String[] split = readLine.split("\\t",-1);
-            	if(firstCustomer){
-					//Create Map of presentation priorities
-					if (lookup.get(split[fileMap.get(selectorRef)]) == null){
-						LOGGER.fatal("Selector '{}' not found in lookup '{}'",split[fileMap.get(selectorRef)],lookupFile);
-						System.exit(1);
-					}
-					presConfig = presentationPriorityConfigPath + lookup.get(split[fileMap.get(selectorRef)]).getPresentationConfig() + presentationPriorityFileSuffix;
-					if( !(new File(presConfig).exists()) ){
-						LOGGER.fatal("Lookup file='{}' doesn't exist",presConfig);
-						System.exit(1);
-					}
-					BufferedReader br = new BufferedReader(new FileReader(presConfig));  
-					String line = null; 
-					int k = 0;
-					while ((line = br.readLine()) != null){
-						presLookup.put(line.trim(), k);
-						k++;
-					}
-					LOGGER.info("Presentation priority map '{}' contains {} values",presConfig, presLookup.size());
-					
-					productionConfig = new ProductionConfiguration(productionConfigPath + lookup.get(split[fileMap.get(selectorRef)]).getProductionConfig() + productionFileSuffix );
-					postageConfig = new PostageConfiguration(postageConfigPath + lookup.get(split[fileMap.get(selectorRef)]).getPostageConfig() + postageFileSuffix );
-					firstCustomer=false;
-				}
-				
-				msc = split[fileMap.get(mscField)];
-				
-				Customer customer = new Customer(custCounter,
-						split[fileMap.get(docRef)],
-						split[fileMap.get(sortField)],
-						split[fileMap.get(selectorRef)],
-						split[fileMap.get(lang)],
-						split[fileMap.get(stat)],
-						split[fileMap.get(batchType)],
-						split[fileMap.get(subBatch)],
-						split[fileMap.get(fleetNo)],
-						split[fileMap.get(groupId)],
-						split[fileMap.get(paperSize)],
-						msc);
-				
-				customer.setName1(split[fileMap.get(name1Field)]);
-				customer.setName2(split[fileMap.get(name2Field)]);
-				customer.setAdd1(split[fileMap.get(add1Field)]);
-				customer.setAdd2(split[fileMap.get(add2Field)]);
-				customer.setAdd3(split[fileMap.get(add3Field)]);
-				customer.setAdd4(split[fileMap.get(add4Field)]);
-				customer.setAdd5(split[fileMap.get(add5Field)]);
-				customer.setPostcode(split[fileMap.get(pcField)]);
-				customer.setDps(split[fileMap.get(dpsField)]);
-				customer.setInsertRef(split[fileMap.get(insertField)]);
-				
-				
-				if( split[fileMap.get(subBatch)] == null || split[fileMap.get(subBatch)].isEmpty() ){
-					batchComparator = split[fileMap.get(batchType)];
-				}else{
-					batchComparator = split[fileMap.get(batchType)] + "_" + split[fileMap.get(subBatch)];
-				}
-				if(presLookup.get(batchComparator) == null){
-					LOGGER.error("Batch type '{}' not found in presentation config '{}' setting priotity to 999",batchComparator,presConfig);
-					customer.setPresentationPriority(999);
-				}else{
-					customer.setPresentationPriority(presLookup.get(batchComparator));
-				}
-				
-				customer.setNoOfPages(Integer.parseInt(split[fileMap.get(noOfPages)]));
-				
-				customers.add(customer);
-				custCounter++;
-            }
-            b.close();
-            	
-			LOGGER.info("Created {} customers",customers.size());
-			
-			try{
-				//SORT HERE
-				Collections.sort(customers, new CustomerComparator());
-			}catch (Exception e){
-				LOGGER.fatal("Error when sorting: '{}'",e.getMessage());
-				System.exit(1);
-			}
-			
-			//Check compliance including:
-			//		MSC groups of under 25
-			//		Compliance level over 83%
-			CheckCompliance cc = new CheckCompliance(customers, productionConfig, postageConfig);
-			
-			//Calculate how we are actually going to send this run, UNSORTED, SORTED via MM, SORTED via OCR
-			String actualMailProduct="";
-			if( "UNSORTED".equalsIgnoreCase(productionConfig.getMailsortProduct()) || cc.getTotalMailsortCount() < Integer.parseInt(productionConfig.getMinimumMailsort()) ){
-				actualMailProduct="UNSORTED";
-				for(Customer customer : customers){
-					//SET FINAL ENVELOPE
-					if("E".equalsIgnoreCase(customer.getLang()) ){
-						customer.setEnvelope(productionConfig.getEnvelopeEnglishUnsorted());
-					}else{
-						customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
-					}
-					
-					//CHANGE BATCH TYPE TO UNSORTED FOR ALL SORTED
-					if("SORTED".equalsIgnoreCase(customer.getBatchType()) ){
-						//LOGGER.info("Changing batch type '{}' to UNSORTED",customer.getBatchType());
-						customer.setBatchType("UNSORTED");
-					}
-					customer.setProduct(actualMailProduct);
-				}
-			} else if( "OCR".equalsIgnoreCase(productionConfig.getMailsortProduct()) ){
-				actualMailProduct="OCR";
-				for(Customer customer : customers){
-					//SET FINAL ENVELOPE
-					if("SORTED".equalsIgnoreCase(customer.getBatchType()) || "MULTI".equalsIgnoreCase(customer.getBatchType()) ){
-						if("E".equalsIgnoreCase(customer.getLang()) ){
-							customer.setEnvelope(productionConfig.getEnvelopeEnglishOcr());
-						}else{
-							customer.setEnvelope(productionConfig.getEnvelopeWelshOcr());
-						}
-						customer.setProduct(actualMailProduct);
-					}else if("UNSORTED".equalsIgnoreCase(customer.getBatchType())){
-						if("E".equalsIgnoreCase(customer.getLang()) ){
-							customer.setEnvelope(productionConfig.getEnvelopeEnglishUnsorted());
-						}else{
-							customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
-						}
-						customer.setProduct("UNSORTED");
-					}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) ){
-						customer.setEnvelope("");
-						customer.setProduct("");
-					}
-				}
-			} else if( "MM".equalsIgnoreCase(productionConfig.getMailsortProduct()) ){
-				if( cc.getDpsAccuracy() < postageConfig.getUkmMinimumCompliance() ){
-					actualMailProduct="OCR";
-					for(Customer customer : customers){
-						//SET FINAL ENVELOPE
-						if("SORTED".equalsIgnoreCase(customer.getBatchType()) || "MULTI".equalsIgnoreCase(customer.getBatchType()) ){
-							if("E".equalsIgnoreCase(customer.getLang()) ){
-								customer.setEnvelope(productionConfig.getEnvelopeEnglishOcr());
-							}else{
-								customer.setEnvelope(productionConfig.getEnvelopeWelshOcr());
-							}
-							customer.setProduct(actualMailProduct);
-						}else if("UNSORTED".equalsIgnoreCase(customer.getBatchType())){
-							if("E".equalsIgnoreCase(customer.getLang()) ){
-								customer.setEnvelope(productionConfig.getEnvelopeEnglishUnsorted());
-							}else{
-								customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
-							}
-							customer.setProduct("UNSORTED");
-						}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) ){
-							customer.setEnvelope("");
-							customer.setProduct("");
-						}
-					}
-				} else {
-					actualMailProduct="MM";
-					//Apply default DPS
-					for(Customer customer : customers){
-						//SET DEFAULT DPS IF APPLICABLE
-						if( postageConfig.getUkmBatchTypes().contains(customer.getBatchType()) && 
-								(customer.getDps().isEmpty() || customer.getDps() == null) ){
-							customer.setDps("9Z");
-						}
-						//SET FINAL ENVELOPE
-						if("SORTED".equalsIgnoreCase(customer.getBatchType()) || "MULTI".equalsIgnoreCase(customer.getBatchType()) ){
-							if("E".equalsIgnoreCase(customer.getLang()) ){
-								customer.setEnvelope(productionConfig.getEnvelopeEnglishMm());
-							}else{
-								customer.setEnvelope(productionConfig.getEnvelopeWelshMm());
-							}
-							customer.setProduct(actualMailProduct);
-						}else if("UNSORTED".equalsIgnoreCase(customer.getBatchType())){
-							if("E".equalsIgnoreCase(customer.getLang()) ){
-								customer.setEnvelope(productionConfig.getEnvelopeEnglishUnsorted());
-							}else{
-								customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
-							}
-							customer.setProduct("UNSORTED");
-						}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) ){
-							customer.setEnvelope("");
-							customer.setProduct("");
-						}
-					}
-				}
-			} else {
-				LOGGER.fatal("Failed to determine mailing product from {}. Mailsort product set to '{}'",productionConfig.getFilename(), productionConfig.getMailsortProduct());
-				System.exit(1);
-			}
-			LOGGER.info("Run will be sent via {} product.",actualMailProduct);
-			
-			try{
-				//SORT HERE
-				Collections.sort(customers, new CustomerComparator());
-			}catch (Exception e){
-				LOGGER.fatal("Error when sorting: '{}'",e.getMessage());
-				System.exit(1);
-			}
-			
-			
-			CalculateLocation cl = new CalculateLocation(customers, lookup, productionConfig);
-			cl.calculate();
-		
-			try{
-				//SORT HERE
-				Collections.sort(customers, new CustomerComparatorWithLocation());
-			}catch (Exception e){
-				LOGGER.fatal("Error when sorting: '{}'",e.getMessage());
-				e.printStackTrace();
-				System.exit(1);
-			}
-			
-			StationeryLookup sl = new StationeryLookup(stationeryLookup);
-			EnvelopeLookup el = new EnvelopeLookup(envelopeLookup);
-			InsertLookup il = new InsertLookup(insertLookup);
-			
-			CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers, productionConfig);
-			eogs.calculate();
-			CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
-			cwas.calculate();
-
-			//Sets jobId, batchSequence and Sequence
-			BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig, actualMailProduct);
-			be.batch();
-			
-			CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct );
-			
-			try{
-				//SORT BACK TO ORIGINAL ORDER HERE
-				Collections.sort(customers, new CustomerComparatorOriginalOrder());
-			}catch (Exception e){
-				LOGGER.fatal("Error when sorting: '{}'",e.getMessage());
-				System.exit(1);
-			}
-			
-			BufferedReader bu = new BufferedReader(new FileReader(f));
-			readLine = bu.readLine();
-			List<String> list = new ArrayList<String>();
-			
-			int i = 0;
-			int jidIdx = fileMap.get(jidField);
-			int siteIdx = fileMap.get(site);
-			int eogIdx = fileMap.get(eogField);
-			int eotIdx = fileMap.get(eotField);
-			int mailContentIdx = fileMap.get(mmBarContent);
-			int seqFieldIdx = fileMap.get(seqField);
-			int outEnvIdx = fileMap.get(outEnv);
-			int mailingProductIdx = fileMap.get(mailingProduct);
-			int batchTypeIdx = fileMap.get(batchType);
-			int totalNumberOfPagesInGroupFieldIdx = fileMap.get(totalNumberOfPagesInGroupField);
-			int insertHopperCodeFieldIdx = fileMap.get(insertHopperCodeField);
-			
 			while ((readLine = bu.readLine()) != null) {
 				String[] split = readLine.split("\\t",-1);
 				list.clear();
@@ -500,10 +191,373 @@ public class Main {
 				fh.write(list);
 				i++;
 			}
-            fh.closeFile();
+		} catch (IOException e) {
+			LOGGER.fatal("IOException thrown when trying to process file '{}' error: '{}'", input, e.getMessage());
+			System.exit(1);
+		}
+		fh.closeFile();
+	}
+
+	private static void calculateActualMailProduct(CheckCompliance cc) {
+
+		//Calculate how we are actually going to send this run, UNSORTED, SORTED via MM, SORTED via OCR
+		if( "UNSORTED".equalsIgnoreCase(productionConfig.getMailsortProduct()) || cc.getTotalMailsortCount() < Integer.parseInt(productionConfig.getMinimumMailsort()) ){
+			actualMailProduct="UNSORTED";
+			for(Customer customer : customers){
+				//SET FINAL ENVELOPE
+				if("E".equalsIgnoreCase(customer.getLang()) ){
+					customer.setEnvelope(productionConfig.getEnvelopeEnglishUnsorted());
+				}else{
+					customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
+				}
+				
+				//CHANGE BATCH TYPE TO UNSORTED FOR ALL SORTED
+				if("SORTED".equalsIgnoreCase(customer.getBatchType()) ){
+					//LOGGER.info("Changing batch type '{}' to UNSORTED",customer.getBatchType());
+					customer.setBatchType("UNSORTED");
+				}
+				customer.setProduct(actualMailProduct);
+			}
+		} else if( "OCR".equalsIgnoreCase(productionConfig.getMailsortProduct()) ){
+			actualMailProduct="OCR";
+			for(Customer customer : customers){
+				//SET FINAL ENVELOPE
+				if("SORTED".equalsIgnoreCase(customer.getBatchType()) || "MULTI".equalsIgnoreCase(customer.getBatchType()) ){
+					if("E".equalsIgnoreCase(customer.getLang()) ){
+						customer.setEnvelope(productionConfig.getEnvelopeEnglishOcr());
+					}else{
+						customer.setEnvelope(productionConfig.getEnvelopeWelshOcr());
+					}
+					customer.setProduct(actualMailProduct);
+				}else if("UNSORTED".equalsIgnoreCase(customer.getBatchType())){
+					if("E".equalsIgnoreCase(customer.getLang()) ){
+						customer.setEnvelope(productionConfig.getEnvelopeEnglishUnsorted());
+					}else{
+						customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
+					}
+					customer.setProduct("UNSORTED");
+				}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) ){
+					customer.setEnvelope("");
+					customer.setProduct("");
+				}
+			}
+		} else if( "MM".equalsIgnoreCase(productionConfig.getMailsortProduct()) ){
+			if( cc.getDpsAccuracy() < postageConfig.getUkmMinimumCompliance() ){
+				actualMailProduct="OCR";
+				for(Customer customer : customers){
+					//SET FINAL ENVELOPE
+					if("SORTED".equalsIgnoreCase(customer.getBatchType()) || "MULTI".equalsIgnoreCase(customer.getBatchType()) ){
+						if("E".equalsIgnoreCase(customer.getLang()) ){
+							customer.setEnvelope(productionConfig.getEnvelopeEnglishOcr());
+						}else{
+							customer.setEnvelope(productionConfig.getEnvelopeWelshOcr());
+						}
+						customer.setProduct(actualMailProduct);
+					}else if("UNSORTED".equalsIgnoreCase(customer.getBatchType())){
+						if("E".equalsIgnoreCase(customer.getLang()) ){
+							customer.setEnvelope(productionConfig.getEnvelopeEnglishUnsorted());
+						}else{
+							customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
+						}
+						customer.setProduct("UNSORTED");
+					}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) ){
+						customer.setEnvelope("");
+						customer.setProduct("");
+					}
+				}
+			} else {
+				actualMailProduct="MM";
+				//Apply default DPS
+				for(Customer customer : customers){
+					//SET DEFAULT DPS IF APPLICABLE
+					if( postageConfig.getUkmBatchTypes().contains(customer.getBatchType()) && 
+							(customer.getDps().isEmpty() || customer.getDps() == null) ){
+						customer.setDps("9Z");
+					}
+					//SET FINAL ENVELOPE
+					if("SORTED".equalsIgnoreCase(customer.getBatchType()) || "MULTI".equalsIgnoreCase(customer.getBatchType()) ){
+						if("E".equalsIgnoreCase(customer.getLang()) ){
+							customer.setEnvelope(productionConfig.getEnvelopeEnglishMm());
+						}else{
+							customer.setEnvelope(productionConfig.getEnvelopeWelshMm());
+						}
+						customer.setProduct(actualMailProduct);
+					}else if("UNSORTED".equalsIgnoreCase(customer.getBatchType())){
+						if("E".equalsIgnoreCase(customer.getLang()) ){
+							customer.setEnvelope(productionConfig.getEnvelopeEnglishUnsorted());
+						}else{
+							customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
+						}
+						customer.setProduct("UNSORTED");
+					}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) ){
+						customer.setEnvelope("");
+						customer.setProduct("");
+					}
+				}
+			}
+		} else {
+			LOGGER.fatal("Failed to determine mailing product from {}. Mailsort product set to '{}'",productionConfig.getFilename(), productionConfig.getMailsortProduct());
+			System.exit(1);
+		}
+		LOGGER.info("Run will be sent via {} product.",actualMailProduct);
+	}
+
+	private static void sortCustomers(ArrayList<Customer> list, Comparator comparator) {
+		try{
+			Collections.sort(list, comparator);
+		}catch (Exception e){
+			LOGGER.fatal("Error when sorting: '{}'",e.getMessage());
+			System.exit(1);
+		}
+	}
+
+	private static void generateCustomersFromInputFile() {
+		try{
+			fh.write(headerRecords);
+
+			File f = new File(input);
+	        BufferedReader b = new BufferedReader(new FileReader(f));
+	        String readLine = b.readLine();
+	        //Read headers
+	        LOGGER.debug("Read line as header '{}'",readLine);
+
+	        fileMap = fh.getMapping();
+	        customers = new ArrayList<Customer>();
+	        boolean firstCustomer = true;
+			Map<String,Integer> presLookup = new HashMap<String,Integer>();
+			String presConfig ="";
+			String batchComparator = "";
+			int custCounter=0;
 			
+	        while ((readLine = b.readLine()) != null) {
+	        	String[] split = readLine.split("\\t",-1);
+	        	if(firstCustomer){
+					//Create Map of presentation priorities
+					if (lookup.get(split[fileMap.get(selectorRef)]) == null){
+						LOGGER.fatal("Selector '{}' not found in lookup '{}'",split[fileMap.get(selectorRef)],lookupFile);
+						System.exit(1);
+					}
+					presConfig = presentationPriorityConfigPath + lookup.get(split[fileMap.get(selectorRef)]).getPresentationConfig() + presentationPriorityFileSuffix;
+					if( !(new File(presConfig).exists()) ){
+						LOGGER.fatal("Lookup file='{}' doesn't exist",presConfig);
+						System.exit(1);
+					}
+					BufferedReader br = new BufferedReader(new FileReader(presConfig));  
+					String line = null; 
+					int k = 0;
+					while ((line = br.readLine()) != null){
+						presLookup.put(line.trim(), k);
+						k++;
+					}
+					LOGGER.info("Presentation priority map '{}' contains {} values",presConfig, presLookup.size());
+					
+					productionConfig = new ProductionConfiguration(productionConfigPath + lookup.get(split[fileMap.get(selectorRef)]).getProductionConfig() + productionFileSuffix );
+					postageConfig = new PostageConfiguration(postageConfigPath + lookup.get(split[fileMap.get(selectorRef)]).getPostageConfig() + postageFileSuffix );
+					firstCustomer=false;
+				}
+				
+				
+				
+				Customer customer = new Customer(custCounter,
+						split[fileMap.get(docRef)],
+						split[fileMap.get(sortField)],
+						split[fileMap.get(selectorRef)],
+						split[fileMap.get(lang)],
+						split[fileMap.get(stat)],
+						split[fileMap.get(batchType)],
+						split[fileMap.get(subBatch)],
+						split[fileMap.get(fleetNo)],
+						split[fileMap.get(groupId)],
+						split[fileMap.get(paperSize)],
+						split[fileMap.get(mscField)]);
+				
+				customer.setName1(split[fileMap.get(name1Field)]);
+				customer.setName2(split[fileMap.get(name2Field)]);
+				customer.setAdd1(split[fileMap.get(add1Field)]);
+				customer.setAdd2(split[fileMap.get(add2Field)]);
+				customer.setAdd3(split[fileMap.get(add3Field)]);
+				customer.setAdd4(split[fileMap.get(add4Field)]);
+				customer.setAdd5(split[fileMap.get(add5Field)]);
+				customer.setPostcode(split[fileMap.get(pcField)]);
+				customer.setDps(split[fileMap.get(dpsField)]);
+				customer.setInsertRef(split[fileMap.get(insertField)]);
+				
+				
+				if( split[fileMap.get(subBatch)] == null || split[fileMap.get(subBatch)].isEmpty() ){
+					batchComparator = split[fileMap.get(batchType)];
+				}else{
+					batchComparator = split[fileMap.get(batchType)] + "_" + split[fileMap.get(subBatch)];
+				}
+				if(presLookup.get(batchComparator) == null){
+					LOGGER.error("Batch type '{}' not found in presentation config '{}' setting priotity to 999",batchComparator,presConfig);
+					customer.setPresentationPriority(999);
+				}else{
+					customer.setPresentationPriority(presLookup.get(batchComparator));
+				}
+				
+				customer.setNoOfPages(Integer.parseInt(split[fileMap.get(noOfPages)]));
+				
+				customers.add(customer);
+				custCounter++;
+	        }
+	        b.close();
+	        	
+			LOGGER.info("Created {} customers",customers.size());
 		} catch (IOException e) {
 			LOGGER.fatal(e.getMessage());
+			System.exit(1);
+		}
+		
+		
+	}
+
+	private static void ensureRequiredPropsAreSet(List<String> headers) {
+		
+		//reqFields is used to validate input, the Y signifies that the field should be present in the input file
+		List<String> reqFields = new ArrayList<String>();
+		reqFields.add(docRef + ",documentReference,Y");
+		reqFields.add(noOfPages + ",noOfPagesField,Y");
+		reqFields.add(lang + ",languageFieldName,Y");
+		reqFields.add(stat + ",stationeryFieldName,Y");
+		reqFields.add(batchType + ",batchTypeFieldName,Y");
+		reqFields.add(subBatch + ",subBatchTypeFieldName,Y");
+		reqFields.add(selectorRef + ",lookupReferenceFieldName,Y");
+		reqFields.add(site + ",siteFieldName,Y");
+		reqFields.add(fleetNo + ",fleetNoFieldName,Y");
+		reqFields.add(groupId + ",groupIdFieldName,Y");
+		reqFields.add(paperSize + ",paperSizeFieldName,Y");
+		reqFields.add(jidField + ",jobIdFieldName,Y");
+		reqFields.add(mscField + ",mscFieldName,Y");
+		reqFields.add(presentationPriorityConfigPath + ",presentationPriorityConfigPath,N");
+		reqFields.add(presentationPriorityFileSuffix + ",presentationPriorityFileSuffix,N");
+		reqFields.add(productionConfigPath + ",productionConfigPath,N");
+		reqFields.add(productionFileSuffix + ",productionFileSuffix,N");
+		reqFields.add(postageConfigPath + ",postageConfigPath,N");
+		reqFields.add(postageFileSuffix + ",postageFileSuffix,N");
+		reqFields.add(sortField + ",sortField,Y");
+		reqFields.add(name1Field + ",name1Field,Y");
+		reqFields.add(name2Field + ",name2Field,Y");
+		reqFields.add(add1Field + ",address1Field,Y");
+		reqFields.add(add2Field + ",address2Field,Y");
+		reqFields.add(add3Field + ",address3Field,Y");
+		reqFields.add(add4Field + ",address4Field,Y");
+		reqFields.add(add5Field + ",address5Field,Y");
+		reqFields.add(pcField + ",postCodeField,Y");
+		reqFields.add(dpsField + ",dpsField,Y");
+		reqFields.add(insertLookup + ",insertLookup,N");
+		reqFields.add(envelopeLookup + ",envelopeLookup,N");
+		reqFields.add(stationeryLookup + ",stationeryLookup,N");
+		reqFields.add(insertField + ",insertField,Y");
+		reqFields.add(mmBarContent + ",mailMarkBarcodeContent,Y");
+		reqFields.add(eogField + ",eogField,Y");
+		reqFields.add(eotField + ",eotField,Y");
+		reqFields.add(seqField + ",childSequence,Y");
+		reqFields.add(outEnv + ",outerEnvelope,Y");
+		reqFields.add(mailingProduct + ",mailingProduct,Y");
+		reqFields.add(totalNumberOfPagesInGroupField + ",totalNumberOfPagesInGroupField,Y");
+		reqFields.add(insertHopperCodeField + ",insertHopperCodeField,Y");
+		
+		for(String str : reqFields){
+			String[] split = str.split(",");
+			if ( "null".equals(split[0])){
+				LOGGER.fatal("Field '{}' not in properties file {}.",split[1],propsFile);
+				System.exit(1);
+			}else{
+				if( !(headers.contains(split[0])) && "Y".equals(split[2]) ){
+					LOGGER.fatal("Field '{}' not found in input file {}.",split[1],input);
+					System.exit(1);
+				}
+			}
+		}
+	}
+
+	private static void assignPropsFromPropsFile() {
+		docRef = CONFIG.getProperty("documentReference");
+		noOfPages =CONFIG.getProperty("noOfPagesField");
+		lang = CONFIG.getProperty("languageFieldName");
+		stat = CONFIG.getProperty("stationeryFieldName");
+		batchType = CONFIG.getProperty("batchTypeFieldName");
+		subBatch = CONFIG.getProperty("subBatchTypeFieldName");
+		selectorRef = CONFIG.getProperty("lookupReferenceFiedName");
+		site = CONFIG.getProperty("siteFieldName");
+		fleetNo = CONFIG.getProperty("fleetNoFieldName");
+		groupId = CONFIG.getProperty("groupIdFieldName");
+		paperSize = CONFIG.getProperty("paperSizeFieldName");
+		jidField = CONFIG.getProperty("jobIdFieldName");
+		mscField = CONFIG.getProperty("mscFieldName");
+		presentationPriorityConfigPath = CONFIG.getProperty("presentationPriorityConfigPath");
+		presentationPriorityFileSuffix = CONFIG.getProperty("presentationPriorityFileSuffix");
+		productionConfigPath = CONFIG.getProperty("productionConfigPath");
+		productionFileSuffix = CONFIG.getProperty("productionFileSuffix");
+		postageConfigPath = CONFIG.getProperty("postageConfigPath");
+		postageFileSuffix = CONFIG.getProperty("postageFileSuffix");
+		sortField = CONFIG.getProperty("sortField");
+		name1Field = CONFIG.getProperty("name1Field");
+		name2Field = CONFIG.getProperty("name2Field");
+		add1Field = CONFIG.getProperty("address1Field");
+		add2Field = CONFIG.getProperty("address2Field");
+		add3Field = CONFIG.getProperty("address3Field");
+		add4Field = CONFIG.getProperty("address4Field");
+		add5Field = CONFIG.getProperty("address5Field");
+		pcField = CONFIG.getProperty("postCodeField");
+		dpsField = CONFIG.getProperty("dpsField");
+		insertLookup = CONFIG.getProperty("insertLookup");
+		envelopeLookup = CONFIG.getProperty("envelopeLookup");
+		stationeryLookup = CONFIG.getProperty("stationeryLookup");
+		insertField = CONFIG.getProperty("insertField");
+		mmBarContent = CONFIG.getProperty("mailMarkBarcodeContent");
+		eogField = CONFIG.getProperty("eogField");
+		eotField = CONFIG.getProperty("eotField");
+		seqField = CONFIG.getProperty("childSequence");
+		outEnv = CONFIG.getProperty("outerEnvelope");
+		mailingProduct = CONFIG.getProperty("mailingProduct");
+		totalNumberOfPagesInGroupField = CONFIG.getProperty("totalNumberOfPagesInGroupField");
+		insertHopperCodeField = CONFIG.getProperty("insertHopperCodeField");
+	}
+
+	private static void loadSelectorLookupFile() {
+		lookupFile=CONFIG.getProperty("lookupFile");
+		if( new File(lookupFile).exists()){
+			LOGGER.debug("lookupfile='{}' Config='{}",lookupFile,CONFIG.size());
+			lookup = new SelectorLookup(lookupFile, CONFIG);
+		}else{
+			LOGGER.fatal("Lookup file='{}' doesn't exist",lookupFile);
+			System.exit(1);
+		}
+	}
+
+	private static void loadPropertiesFile() {
+		CONFIG = new Properties();
+		try {
+			CONFIG.load(new FileInputStream(propsFile));
+		} catch (IOException e) {
+			LOGGER.fatal("Log file '{}' didn't load: '{}'",propsFile, e.getMessage());
+			System.exit(1);
+		}
+	}
+
+	private static void validateInputs() {
+		if( !(new File(input).exists()) ){
+			LOGGER.fatal("File '{}' doesn't exist",input);
+			System.exit(1);
+		}
+		if( !(new File(propsFile).exists()) ){
+			LOGGER.fatal("File '{}' doesn't exist",propsFile);
+			System.exit(1);
+		}
+	}
+
+	private static void assignArgs(String[] args) {
+		input = args[0];
+		output = args[1];
+		propsFile = args[2];
+		jid = args[3];
+		runNo = args[4];
+	}
+
+	private static void validateNumberOfArgs(String[] args) {
+		if( args.length != EXPECTED_NO_OF_ARGS ){
+			LOGGER.fatal("Incorrect number of args parsed '{}' expecting '{}'. Args are 1.input file, 2.output file, 3.props file, 4.jobId, 5.Runno.",args.length,EXPECTED_NO_OF_ARGS);
 			System.exit(1);
 		}
 	}

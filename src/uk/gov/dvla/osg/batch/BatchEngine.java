@@ -21,14 +21,12 @@ public class BatchEngine {
 	private ProductionConfiguration prodConfig;
 	private PostageConfiguration postConfig;
 	private String parentJid;
-	private String product;
 	
-	public BatchEngine(String parentJid, List<Customer> input, ProductionConfiguration prodConfig, PostageConfiguration postConfig, String product){
+	public BatchEngine(String parentJid, List<Customer> input, ProductionConfiguration prodConfig, PostageConfiguration postConfig){
 		this.parentJid=parentJid;
 		this.input=input;
 		this.prodConfig=prodConfig;
 		this.postConfig=postConfig;
-		this.product=product;
 	}
 	
 	public void batch(){
@@ -128,7 +126,7 @@ public class BatchEngine {
 	private boolean isAdjustmentRequiredForLast25(int idx){
 		idx = idx -1;
 		boolean result = false;
-		if( "UNSORTED".equalsIgnoreCase(product) ){
+		if( "UNSORTED".equalsIgnoreCase(input.get(idx).getProduct()) ){
 			result = false;
 		} else {
 			if( postConfig.getUkmBatchTypes().contains(input.get(idx).getBatchType()) ){
