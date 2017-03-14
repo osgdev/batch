@@ -45,19 +45,24 @@ public class CalculateWeightsAndSizes {
 		ArrayList<Customer> group = new ArrayList<Customer>();
 		
 		for(Customer cus : customers){
-			if(!( cus.getInsertRef().isEmpty() )){
-				insertSize=insertLookup.getLookup().get(cus.getInsertRef()).getThickness();
-				insertWeight=insertLookup.getLookup().get(cus.getInsertRef()).getWeight();
-			}else{
-				insertSize=0;
-				insertWeight=0;
+			try{
+					
+				if(!( cus.getInsertRef().isEmpty() )){
+					insertSize=insertLookup.getLookup().get(cus.getInsertRef()).getThickness();
+					insertWeight=insertLookup.getLookup().get(cus.getInsertRef()).getWeight();
+				}else{
+					insertSize=0;
+					insertWeight=0;
+				}
+				envelopeSize = envelopeLookup.getLookup().get(pc.getEnvelopeType()).getThickness();
+				envelopeWeight = envelopeLookup.getLookup().get(pc.getEnvelopeType()).getWeight();
+				
+				paperSize = stationeryLookup.getLookup().get(cus.getStationery()).getThickness() * envelopeLookup.getLookup().get(pc.getEnvelopeType()).getFoldMultiplier();
+				paperWeight = stationeryLookup.getLookup().get(cus.getStationery()).getWeight() * cus.getNoOfPages();
+			} catch (NullPointerException e){
+				LOGGER.fatal("Envelope, Insert or Stationery lookup failed: '{}'", e.getMessage());
+				System.exit(1);
 			}
-			envelopeSize = envelopeLookup.getLookup().get(pc.getEnvelopeType()).getThickness();
-			envelopeWeight = envelopeLookup.getLookup().get(pc.getEnvelopeType()).getWeight();
-			
-			paperSize = stationeryLookup.getLookup().get(cus.getStationery()).getThickness() * envelopeLookup.getLookup().get(pc.getEnvelopeType()).getFoldMultiplier();
-			paperWeight = stationeryLookup.getLookup().get(cus.getStationery()).getWeight() * cus.getNoOfPages();
-			
 			totalSize= insertSize + paperSize + envelopeSize;
 			totalWeight = insertWeight + envelopeWeight + paperWeight;
 			
