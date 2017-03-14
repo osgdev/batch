@@ -27,24 +27,33 @@ public class BatchEngine {
 		this.input=input;
 		this.prodConfig=prodConfig;
 		this.postConfig=postConfig;
+		batch();
 	}
 	
-	public void batch(){
-		
-		
-		int j =1;
-		int k =1;
+	private void batch(){
+		int batchSequence =1;
+		int pid =1;
 		int groupIdCounter = 1;
 		boolean firstCustomer = true;
 		Customer prev = null;
 		int batchMax = 0;
 		int pageCount =0;
 		int cusIdx = 0;
+		int mscCounter = 0;
+		
 		for (Customer customer : input){
 			pageCount = pageCount + customer.getNoOfPages();
 			if(firstCustomer){
 				prev = customer;
 				firstCustomer=false;
+			}
+			
+			if( !(customer.getMsc().equals(prev.getMsc())) ){
+				mscCounter = 0;
+			}
+			
+			if( "X".equalsIgnoreCase(customer.getEog()) ){
+				mscCounter ++;
 			}
 			
 			batchMax = getBatchMax(customer.getLang(), customer.getBatchType());
@@ -56,47 +65,53 @@ public class BatchEngine {
 					(pageCount < (batchMax + 1)) && 
 					(prev.getStationery().equals(customer.getStationery())) ){
 				//SAME BATCH
-				customer.setJid(parentJid + "." + j);
-				
-				/*if( !(prev.getGroupId().equals( customer.getGroupId() ) ) ){
-					if( prev.getGroupId().isEmpty() ){
-						customer.setGroupId("" + groupIdCounter);
-					} else {
-						groupIdCounter ++;
-					}
-				} else {
-					if( !(customer.getGroupId().isEmpty()) ){
-						customer.setGroupId("" + groupIdCounter);
-					}
-				}*/
-				
+				customer.setJid(parentJid + "." + batchSequence);
 				
 			}else{
 				//NEW BATCH
-				if( isAdjustmentRequiredForLast25(cusIdx) ){
+				if( mscCounter < postConfig.getUkmMinimumTrayVolume() && 
+					postConfig.getUkmBatchTypes().contains(customer.getBatchType()) && 
+					prev.getBatchType().equals(customer.getBatchType()) ){
 					
 					String mscForAdjusting = input.get(cusIdx-1).getMsc();
-					LOGGER.info("Adjustment required for customer '{}', msc that needs adjusting={}",customer.getDocRef(),mscForAdjusting);
+					LOGGER.info("Adjustment required for customer '{}', msc that needs adjusting={} number of groups={} idx={}",customer.getDocRef(),mscForAdjusting,mscCounter,cusIdx);
+					
+					boolean match = true;
+					int startIdx = cusIdx;
+					for( int count = cusIdx; match ; count -- ){
+						if( !(input.get(count).getMsc().equals(mscForAdjusting) ) ){
+							startIdx = count + 1;
+							match=false;
+							break;
+						}
+					}
+					
+					LOGGER.info("Need to start adjusting from idx {} line {}",startIdx,startIdx+1 );
+					int newPid =1;
+					for(int adjust = startIdx; adjust < cusIdx;  adjust ++){
+						input.get(adjust).setJid(parentJid + "." + (batchSequence + 1) );
+						input.get(adjust).setSequence(newPid);
+						newPid ++;
+					}
 					
 					
 					
-					
-					
-					j ++;
-					k=1;
+					batchSequence ++;
+					pid=newPid;
 					pageCount = customer.getNoOfPages();
-					customer.setJid(parentJid + "." + j);
+					customer.setJid(parentJid + "." + batchSequence);
 				} else {
-					j ++;
-					k=1;
+					batchSequence ++;
+					pid=1;
 					pageCount = customer.getNoOfPages();
-					customer.setJid(parentJid + "." + j);
+					customer.setJid(parentJid + "." + batchSequence);
 				}
+				mscCounter=0;
 			}
 			prev = customer;
-			customer.setBatchSequence(j);
-			customer.setSequence(k);
-			k++;
+			customer.setBatchSequence(batchSequence);
+			customer.setSequence(pid);
+			pid++;
 			cusIdx ++;
 		}
 		

@@ -1,11 +1,14 @@
 package uk.gov.dvla.osg.batch;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -14,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.commons.csv.CSVRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,6 +43,7 @@ public class Main {
 	static PostageConfiguration postageConfig;
 	static HashMap<String,Integer> fileMap;
 	static String actualMailProduct;
+	static Map<String,Integer> presLookup;
 	
 	static StationeryLookup sl;
 	static EnvelopeLookup el;
@@ -69,37 +72,58 @@ public class Main {
 		headerRecords = fh.getHeaders();
 		
 		assignPropsFromPropsFile();
+		sl = new StationeryLookup(stationeryLookup);
+		el = new EnvelopeLookup(envelopeLookup);
+		il = new InsertLookup(insertLookup);
+		
 		ensureRequiredPropsAreSet(headerRecords);
 		
 		generateCustomersFromInputFile();
 	
 		sortCustomers(customers, new CustomerComparator());
+		
+		//### NEW ORCHESTRATION
+		CalculateLocation cl = new CalculateLocation(customers, lookup, productionConfig);
+		sortCustomers(customers, new CustomerComparatorWithLocation());
+		CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers, productionConfig);
+		
+		
 		//Check compliance including:
 		//		MSC groups of under 25
 		//		Compliance level over 83%
-		CheckCompliance cc = new CheckCompliance(customers, productionConfig, postageConfig);
+		CheckCompliance cc = new CheckCompliance(customers, productionConfig, postageConfig, presLookup);
 		
 		calculateActualMailProduct(cc);
 		
-		sortCustomers(customers, new CustomerComparator());
+		//### ORIG sortCustomers(customers, new CustomerComparator());
 		
-		CalculateLocation cl = new CalculateLocation(customers, lookup, productionConfig);
-		cl.calculate();
+		//### ORIG CalculateLocation cl = new CalculateLocation(customers, lookup, productionConfig);
 		
-		sortCustomers(customers, new CustomerComparatorWithLocation());
+		sortCustomers(customers, new CustomerComparatorWithLocation()); //also orig
 		
-		sl = new StationeryLookup(stationeryLookup);
-		el = new EnvelopeLookup(envelopeLookup);
-		il = new InsertLookup(insertLookup);
 		
-		CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers, productionConfig);
-		eogs.calculate();
+		//### ORIG CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers, productionConfig);
 		CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
-		cwas.calculate();
+		
 		//Sets jobId, batchSequence and Sequence
 		BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig);
-		be.batch();
+		
+		
+		PrintWriter pw = null;
+		try{
+			pw = new PrintWriter(new BufferedWriter(new FileWriter("C:/Users/dendlel/Desktop/RPD/TestData/DEBUG.DAT",false)));
+			for(Customer cus : customers){
+				pw.println(cus.getDocRef() + "," + cus.getJid() + "," + cus.getSequence() + "," + cus.getMsc() + "," + cus.getBatchType() + "_" + cus.getSubBatch() + "," + cus.getFleetNo() + "," + cus.getLang() + "," + cus.getEog());
+				//pw.println(cus.getDocRef() + "," + cus.getMsc() + "," + cus.getBatchType() + "_" + cus.getSubBatch() + "," + cus.getLang());
+			}
+		}catch (Exception e){
 			
+		} finally{
+			pw.close();
+		}
+		
+		
+		
 		CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct );
 		
 		sortCustomers(customers, new CustomerComparatorOriginalOrder());
@@ -324,7 +348,7 @@ public class Main {
 	        fileMap = fh.getMapping();
 	        customers = new ArrayList<Customer>();
 	        boolean firstCustomer = true;
-			Map<String,Integer> presLookup = new HashMap<String,Integer>();
+			presLookup = new HashMap<String,Integer>();
 			String presConfig ="";
 			String batchComparator = "";
 			int custCounter=0;

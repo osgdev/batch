@@ -3,6 +3,7 @@ package uk.gov.dvla.osg.batch;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
@@ -20,11 +21,13 @@ public class CheckCompliance {
 	private float compliance, maxBadDps;
 	private int totalMailsortCount, badDpsCount, goodDpsCount, percentage;
 	private Set<String> uniqueMscs;
+	private Map<String,Integer> presLookup;
 	
-	public CheckCompliance(ArrayList<Customer> customers, ProductionConfiguration prodConfig,PostageConfiguration postConfig){
+	public CheckCompliance(ArrayList<Customer> customers, ProductionConfiguration prodConfig,PostageConfiguration postConfig, Map<String, Integer> presLookup){
 		this.customers=customers;
 		this.prodConfig=prodConfig;
 		this.postConfig=postConfig;
+		this.presLookup=presLookup;
 		uniqueMscs= new HashSet<String>();
 		
 		checkMscGroups();
@@ -66,7 +69,7 @@ public class CheckCompliance {
 		ArrayList<String> mscsToAdjust = new ArrayList<String>();
 		if( !( "UNSORTED".equalsIgnoreCase(prodConfig.getMailsortProduct()) ) ){
 			for(Customer cus : customers){
-				if( postConfig.getUkmBatchTypes().contains(cus.getBatchType()) ){
+				if( postConfig.getUkmBatchTypes().contains(cus.getBatchType()) && "X".equalsIgnoreCase(cus.getEog()) ){
 					uniqueMscs.add(cus.getLang() + cus.getBatchType() + cus.getSubBatch() + cus.getMsc());
 					mscs.add(cus.getLang() + cus.getBatchType() + cus.getSubBatch() + cus.getMsc());
 				}
@@ -85,7 +88,8 @@ public class CheckCompliance {
 				for(Customer cus : customers){
 					if( mscsToAdjust.contains(cus.getLang() + cus.getBatchType() + cus.getSubBatch() + cus.getMsc()) ){
 						cus.setBatchType("UNSORTED");
-						
+						cus.setEog("X");
+						cus.setPresentationPriority(presLookup.get("UNSORTED"));
 					}
 				}
 			}

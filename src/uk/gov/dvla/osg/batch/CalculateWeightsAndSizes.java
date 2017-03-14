@@ -29,9 +29,10 @@ public class CalculateWeightsAndSizes {
 		this.insertLookup=insertLookup;
 		this.customers=customers;
 		this.pc=pc;
+		calculate();
 	}
 	
-	public void calculate() {
+	private void calculate() {
 		//INSERTS, ENVELOPE, PAPER all in mm
 		float insertSize = 0;
 		float insertWeight = 0;
@@ -63,10 +64,16 @@ public class CalculateWeightsAndSizes {
 				LOGGER.fatal("Envelope, Insert or Stationery lookup failed: '{}'", e.getMessage());
 				System.exit(1);
 			}
-			totalSize= insertSize + paperSize + envelopeSize;
-			totalWeight = insertWeight + envelopeWeight + paperWeight;
 			
-			LOGGER.debug("Customer with doc ref '{}' size set to {}, weight set to {}",cus.getDocRef(),totalSize, totalWeight);
+			if( "X".equalsIgnoreCase(cus.getEog()) ){
+				totalSize = insertSize + paperSize + envelopeSize;
+				totalWeight = insertWeight + paperWeight + envelopeWeight;
+			} else {
+				totalSize= insertSize + paperSize;
+				totalWeight=insertWeight + paperWeight;
+			}
+			
+			//LOGGER.debug("Customer with doc ref '{}' size set to {}, weight set to {}",cus.getDocRef(),totalSize, totalWeight);
 			cus.setWeight(totalWeight);
 			cus.setSize(totalSize);
 			
@@ -77,7 +84,7 @@ public class CalculateWeightsAndSizes {
 				
 				for(Customer customer : group){
 					customer.setTotalPagesInGroup(pageInGroupCount);
-					LOGGER.debug("Customer '{}' total pages set to {}",customer.getDocRef(),pageInGroupCount);
+					//LOGGER.debug("Customer '{}' total pages set to {}",customer.getDocRef(),pageInGroupCount);
 				}
 				pageInGroupCount=0;
 				group.clear();

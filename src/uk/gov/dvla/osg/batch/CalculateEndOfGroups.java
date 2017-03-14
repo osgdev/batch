@@ -17,9 +17,10 @@ public class CalculateEndOfGroups {
 		LOGGER.info("Starting CalculateEndOfGroups");
 		this.input=input;
 		this.pc=pc;
+		calculate();
 	}
 	
-	public void calculate(){
+	private void calculate(){
 		Customer cus, next;
 		int pageCount=0;
 		int maxPages=0;
@@ -35,7 +36,7 @@ public class CalculateEndOfGroups {
 					
 					if( cus.getGroupId().equalsIgnoreCase(next.getGroupId()) ){
 						pageCount = pageCount + cus.getNoOfPages();
-						LOGGER.debug("Group ID set, page count={}, max pages={}, this plus next={}",pageCount,maxPages,(pageCount + next.getNoOfPages()));
+						//LOGGER.debug("Group ID set, page count={}, max pages={}, this plus next={}",pageCount,maxPages,(pageCount + next.getNoOfPages()));
 						if( (pageCount + next.getNoOfPages()) > maxPages ){
 							cus.setEog("X");
 							pageCount=0;
@@ -45,7 +46,7 @@ public class CalculateEndOfGroups {
 						pageCount=0;
 					}
 				}else{
-					LOGGER.debug("No group ID set, setting EOG to X");
+					//LOGGER.debug("No group ID set, setting EOG to X");
 					cus.setEog("X");
 					pageCount=0;
 				}

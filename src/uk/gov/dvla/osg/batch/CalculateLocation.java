@@ -25,9 +25,10 @@ public class CalculateLocation {
 		this.input=input;
 		this.lookup=lookup;
 		this.props=props;
+		calculate();
 	}
 	
-	public void calculate(){
+	private void calculate(){
 		
 		List<Customer> sortedE = new ArrayList<Customer>();
 		List<Customer> unsortedE = new ArrayList<Customer>();
