@@ -478,7 +478,7 @@ public class Main {
 		stat = CONFIG.getProperty("stationeryFieldName");
 		batchType = CONFIG.getProperty("batchTypeFieldName");
 		subBatch = CONFIG.getProperty("subBatchTypeFieldName");
-		selectorRef = CONFIG.getProperty("lookupReferenceFiedName");
+		selectorRef = CONFIG.getProperty("lookupReferenceFieldName");
 		site = CONFIG.getProperty("siteFieldName");
 		fleetNo = CONFIG.getProperty("fleetNoFieldName");
 		groupId = CONFIG.getProperty("groupIdFieldName");

@@ -34,6 +34,7 @@ public class BatchEngine {
 		
 		int j =1;
 		int k =1;
+		int groupIdCounter = 1;
 		boolean firstCustomer = true;
 		Customer prev = null;
 		int batchMax = 0;
@@ -56,6 +57,20 @@ public class BatchEngine {
 					(prev.getStationery().equals(customer.getStationery())) ){
 				//SAME BATCH
 				customer.setJid(parentJid + "." + j);
+				
+				/*if( !(prev.getGroupId().equals( customer.getGroupId() ) ) ){
+					if( prev.getGroupId().isEmpty() ){
+						customer.setGroupId("" + groupIdCounter);
+					} else {
+						groupIdCounter ++;
+					}
+				} else {
+					if( !(customer.getGroupId().isEmpty()) ){
+						customer.setGroupId("" + groupIdCounter);
+					}
+				}*/
+				
+				
 			}else{
 				//NEW BATCH
 				if( isAdjustmentRequiredForLast25(cusIdx) ){
