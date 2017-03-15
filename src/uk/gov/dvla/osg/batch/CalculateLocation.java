@@ -131,11 +131,7 @@ public class CalculateLocation {
 							customer.setSite("m");
 						}
 					} else {
-						if("M".equalsIgnoreCase(props.getEnglishSorted()) ){
-							customer.setSite("m");
-						} else {
-							customer.setSite("f");
-						}
+						setSite(customer, props.getEnglishSorted());
 					}
 				}else{
 					if( isNumeric(props.getWelshSorted()) ){
@@ -151,11 +147,7 @@ public class CalculateLocation {
 							customer.setSite("m");
 						}
 					} else {
-						if("M".equalsIgnoreCase(props.getWelshSorted()) ){
-							customer.setSite("m");
-						} else {
-							customer.setSite("f");
-						}
+						setSite(customer, props.getWelshSorted());
 					}
 				}
 			}
@@ -174,11 +166,7 @@ public class CalculateLocation {
 							customer.setSite("m");
 						}
 					} else {
-						if("M".equalsIgnoreCase(props.getEnglishUnsorted()) ){
-							customer.setSite("m");
-						} else {
-							customer.setSite("f");
-						}
+						setSite(customer, props.getEnglishUnsorted());
 					}
 				}else{
 					if( isNumeric(props.getWelshUnsorted()) ){
@@ -194,11 +182,7 @@ public class CalculateLocation {
 							customer.setSite("m");
 						}
 					} else {
-						if("M".equalsIgnoreCase(props.getWelshUnsorted()) ){
-							customer.setSite("m");
-						} else {
-							customer.setSite("f");
-						}
+						setSite(customer, props.getWelshUnsorted());
 					}
 				}
 			}
@@ -216,11 +200,7 @@ public class CalculateLocation {
 							customer.setSite("m");
 						}
 					} else {
-						if( "M".equalsIgnoreCase(props.getEnglishFleet()) ){
-							customer.setSite("m");
-						}else{
-							customer.setSite("f");
-						}
+						setSite(customer, props.getEnglishFleet());
 					}
 				} else {
 					if( isNumeric(props.getWelshFleet()) ){
@@ -234,11 +214,7 @@ public class CalculateLocation {
 							customer.setSite("m");
 						}
 					} else {
-						if( "M".equalsIgnoreCase(props.getWelshFleet()) ){
-							customer.setSite("m");
-						}else{
-							customer.setSite("f");
-						}
+						setSite(customer, props.getWelshFleet());
 					}
 				}
 			}
@@ -255,11 +231,7 @@ public class CalculateLocation {
 							customer.setSite("m");
 						}
 					} else {
-						if( "M".equalsIgnoreCase(props.getEnglishClerical()) ){
-							customer.setSite("m");
-						}else{
-							customer.setSite("f");
-						}
+						setSite(customer, props.getEnglishClerical());
 					}
 				} else {
 					if( isNumeric(props.getWelshClerical()) ){
@@ -273,11 +245,7 @@ public class CalculateLocation {
 							customer.setSite("m");
 						}
 					} else {
-						if( "M".equalsIgnoreCase(props.getWelshClerical()) ){
-							customer.setSite("m");
-						}else{
-							customer.setSite("f");
-						}
+						setSite(customer, props.getWelshClerical());
 					}
 				}
 			}
@@ -297,11 +265,7 @@ public class CalculateLocation {
 							customer.setSite("m");
 						}
 					} else {
-						if("M".equalsIgnoreCase(props.getEnglishSorting()) ){
-							customer.setSite("m");
-						} else {
-							customer.setSite("f");
-						}
+						setSite(customer, props.getEnglishSorting());
 					}
 				}else{
 					if( isNumeric(props.getWelshSorting()) ){
@@ -317,11 +281,7 @@ public class CalculateLocation {
 							customer.setSite("m");
 						}
 					} else {
-						if("M".equalsIgnoreCase(props.getWelshSorting()) ){
-							customer.setSite("m");
-						} else {
-							customer.setSite("f");
-						}
+						setSite(customer, props.getWelshSorting());
 					}
 				}
 			}
@@ -339,11 +299,7 @@ public class CalculateLocation {
 							customer.setSite("m");
 						}
 					} else {
-						if( "M".equalsIgnoreCase(props.getEnglishMulti()) ){
-							customer.setSite("m");
-						}else{
-							customer.setSite("f");
-						}
+						setSite(customer, props.getEnglishMulti());
 					}
 				} else {
 					if( isNumeric(props.getWelshMulti()) ){
@@ -357,17 +313,21 @@ public class CalculateLocation {
 							customer.setSite("m");
 						}
 					} else {
-						if( "M".equalsIgnoreCase(props.getWelshMulti()) ){
-							customer.setSite("m");
-						}else{
-							customer.setSite("f");
-						}
+						setSite(customer, props.getWelshMulti());
 					}
 				}
 			}
 		}
 	}
-	
+
+	private void setSite(Customer customer, String site) {
+		if("M".equalsIgnoreCase(site) ){
+			customer.setSite("m");
+		} else {
+			customer.setSite("f");
+		}
+	}
+
 	private boolean isNumeric(String s) {  
 	    return s.matches("[-+]?\\d*\\.?\\d+");  
 	}
