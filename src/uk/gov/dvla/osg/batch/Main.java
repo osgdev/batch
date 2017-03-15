@@ -96,34 +96,16 @@ public class Main {
 		calculateActualMailProduct(cc);
 		
 		//### ORIG sortCustomers(customers, new CustomerComparator());
-		
 		//### ORIG CalculateLocation cl = new CalculateLocation(customers, lookup, productionConfig);
 		
 		sortCustomers(customers, new CustomerComparatorWithLocation()); //also orig
-		
 		
 		//### ORIG CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers, productionConfig);
 		CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
 		
 		//Sets jobId, batchSequence and Sequence
 		BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig);
-		
-		
-		PrintWriter pw = null;
-		try{
-			pw = new PrintWriter(new BufferedWriter(new FileWriter("C:/Users/dendlel/Desktop/RPD/TestData/DEBUG.DAT",false)));
-			for(Customer cus : customers){
-				pw.println(cus.getDocRef() + "," + cus.getJid() + "," + cus.getSequence() + "," + cus.getMsc() + "," + cus.getBatchType() + "_" + cus.getSubBatch() + "," + cus.getFleetNo() + "," + cus.getLang() + "," + cus.getEog());
-				//pw.println(cus.getDocRef() + "," + cus.getMsc() + "," + cus.getBatchType() + "_" + cus.getSubBatch() + "," + cus.getLang());
-			}
-		}catch (Exception e){
-			
-		} finally{
-			pw.close();
-		}
-		
-		
-		
+				
 		CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct );
 		
 		sortCustomers(customers, new CustomerComparatorOriginalOrder());
@@ -185,8 +167,8 @@ public class Main {
 							list.add("");
 						}
 					}else if( x == eotIdx ){
-						if( customers.get(i).getEot() != null){
-							list.add("" + customers.get(i).getEot());
+						if( customers.get(i).getSot() != null){
+							list.add("" + customers.get(i).getSot());
 						}else{
 							list.add("");
 						}
