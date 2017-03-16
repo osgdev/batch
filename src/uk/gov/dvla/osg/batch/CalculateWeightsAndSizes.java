@@ -69,8 +69,8 @@ public class CalculateWeightsAndSizes {
 				totalSize = insertSize + paperSize + envelopeSize;
 				totalWeight = insertWeight + paperWeight + envelopeWeight;
 			} else {
-				totalSize= insertSize + paperSize;
-				totalWeight=insertWeight + paperWeight;
+				totalSize= paperSize;
+				totalWeight=paperWeight;
 			}
 			
 			//LOGGER.debug("Customer with doc ref '{}' size set to {}, weight set to {}",cus.getDocRef(),totalSize, totalWeight);
