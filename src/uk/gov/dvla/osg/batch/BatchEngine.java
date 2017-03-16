@@ -1,11 +1,7 @@
 package uk.gov.dvla.osg.batch;
 
-import java.util.HashMap;
-import java.util.HashSet;
+
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,7 +9,7 @@ import org.apache.logging.log4j.Logger;
 import uk.gov.dvla.osg.common.classes.Customer;
 import uk.gov.dvla.osg.common.classes.PostageConfiguration;
 import uk.gov.dvla.osg.common.classes.ProductionConfiguration;
-import uk.gov.dvla.osg.common.classes.SelectorLookup;
+
 
 public class BatchEngine {
 	private static final Logger LOGGER = LogManager.getLogger();
@@ -33,7 +29,6 @@ public class BatchEngine {
 	private void batch(){
 		int batchSequence =1;
 		int pid =1;
-		int groupIdCounter = 1;
 		boolean firstCustomer = true;
 		Customer prev = null;
 		int batchMax = 0;
@@ -153,29 +148,4 @@ public class BatchEngine {
 		return batchMax;
 	}
 
-	private boolean isAdjustmentRequiredForLast25(int idx){
-		idx = idx -1;
-		boolean result = false;
-		if( "UNSORTED".equalsIgnoreCase(input.get(idx).getProduct()) ){
-			result = false;
-		} else {
-			if( postConfig.getUkmBatchTypes().contains(input.get(idx).getBatchType()) ){
-				if( idx < (postConfig.getUkmMinimumTrayVolume()-1) ){
-					LOGGER.fatal("{} batch has less than {} mailpieces in tray.",input.get(idx).getBatchType(),postConfig.getUkmMinimumTrayVolume());
-					System.exit(1);
-				} else {
-					if( input.get(idx - (postConfig.getUkmMinimumTrayVolume()-1) ).getMsc().equalsIgnoreCase(input.get(idx).getMsc() ) ){
-						result = false;
-					} else {
-						result = true;
-					}
-				}
-			} else {
-				result = false;
-			}
-		}
-		return result;
-		
-	}
-	
 }

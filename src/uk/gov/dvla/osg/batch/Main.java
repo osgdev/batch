@@ -58,7 +58,8 @@ public class Main {
 	productionConfigPath, productionFileSuffix, postageConfigPath, postageFileSuffix, sortField,
 	name1Field, name2Field, add1Field, add2Field, add3Field, add4Field, add5Field, pcField,
 	dpsField, insertLookup, envelopeLookup, stationeryLookup, insertField, mmBarContent, eogField,
-	eotField, seqField, outEnv, mailingProduct, totalNumberOfPagesInGroupField, insertHopperCodeField;
+	eotField, seqField, outEnv, mailingProduct, totalNumberOfPagesInGroupField, insertHopperCodeField, 
+	mmCustomerContent;
 
 	public static void main(String[] args) {
 		LOGGER.info("Starting uk.gov.dvla.osg.batch.Main");
@@ -387,6 +388,7 @@ public class Main {
 				customer.setPostcode(split[fileMap.get(pcField)]);
 				customer.setDps(split[fileMap.get(dpsField)]);
 				customer.setInsertRef(split[fileMap.get(insertField)]);
+				customer.setMmCustomerContent(split[fileMap.get(mmCustomerContent)]);
 				
 				
 				if( split[fileMap.get(subBatch)] == null || split[fileMap.get(subBatch)].isEmpty() ){
@@ -462,6 +464,8 @@ public class Main {
 		reqFields.add(mailingProduct + ",mailingProduct,Y");
 		reqFields.add(totalNumberOfPagesInGroupField + ",totalNumberOfPagesInGroupField,Y");
 		reqFields.add(insertHopperCodeField + ",insertHopperCodeField,Y");
+		reqFields.add(mmCustomerContent + ",mailMarkBarcodeCustomerContent,Y");
+		
 		
 		for(String str : reqFields){
 			String[] split = str.split(",");
@@ -519,6 +523,7 @@ public class Main {
 		mailingProduct = CONFIG.getProperty("mailingProduct");
 		totalNumberOfPagesInGroupField = CONFIG.getProperty("totalNumberOfPagesInGroupField");
 		insertHopperCodeField = CONFIG.getProperty("insertHopperCodeField");
+		mmCustomerContent = CONFIG.getProperty("mailMarkBarcodeCustomerContent");
 	}
 
 	private static void loadSelectorLookupFile() {
