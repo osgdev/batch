@@ -68,51 +68,27 @@ public class Main {
 		validateInputs();
 		loadPropertiesFile();
 		loadSelectorLookupFile();
-		
 		fh = new RpdFileHandler(input, output);
 		headerRecords = fh.getHeaders();
-		
 		assignPropsFromPropsFile();
 		sl = new StationeryLookup(stationeryLookup);
 		el = new EnvelopeLookup(envelopeLookup);
 		il = new InsertLookup(insertLookup);
 		
 		ensureRequiredPropsAreSet(headerRecords);
-		
 		generateCustomersFromInputFile();
-	
 		sortCustomers(customers, new CustomerComparator());
-		
-		//### NEW ORCHESTRATION
 		CalculateLocation cl = new CalculateLocation(customers, lookup, productionConfig);
 		sortCustomers(customers, new CustomerComparatorWithLocation());
 		CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers, productionConfig);
-		
-		
-		//Check compliance including:
-		//		MSC groups of under 25
-		//		Compliance level over 83%
 		CheckCompliance cc = new CheckCompliance(customers, productionConfig, postageConfig, presLookup);
-		
 		calculateActualMailProduct(cc);
-		
-		//### ORIG sortCustomers(customers, new CustomerComparator());
-		//### ORIG CalculateLocation cl = new CalculateLocation(customers, lookup, productionConfig);
-		
 		sortCustomers(customers, new CustomerComparatorWithLocation()); //also orig
-		
-		//### ORIG CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers, productionConfig);
 		CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
-		
-		//Sets jobId, batchSequence and Sequence
 		BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig);
-				
 		CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct );
-		
 		sortCustomers(customers, new CustomerComparatorOriginalOrder());
-		
 		writeResultsToFile();
-		
 	}
 
 	private static void writeResultsToFile() {
@@ -143,6 +119,8 @@ public class Main {
 		int batchTypeIdx = fileMap.get(batchType);
 		int totalNumberOfPagesInGroupFieldIdx = fileMap.get(totalNumberOfPagesInGroupField);
 		int insertHopperCodeFieldIdx = fileMap.get(insertHopperCodeField);
+		
+		
 		
 		try {
 			while ((readLine = bu.readLine()) != null) {
@@ -422,59 +400,58 @@ public class Main {
 	private static void ensureRequiredPropsAreSet(List<String> headers) {
 		
 		//reqFields is used to validate input, the Y signifies that the field should be present in the input file
-		List<String> reqFields = new ArrayList<String>();
-		reqFields.add(docRef + ",documentReference,Y");
-		reqFields.add(noOfPages + ",noOfPagesField,Y");
-		reqFields.add(lang + ",languageFieldName,Y");
-		reqFields.add(stat + ",stationeryFieldName,Y");
-		reqFields.add(batchType + ",batchTypeFieldName,Y");
-		reqFields.add(subBatch + ",subBatchTypeFieldName,Y");
-		reqFields.add(selectorRef + ",lookupReferenceFieldName,Y");
-		reqFields.add(site + ",siteFieldName,Y");
-		reqFields.add(fleetNo + ",fleetNoFieldName,Y");
-		reqFields.add(groupId + ",groupIdFieldName,Y");
-		reqFields.add(paperSize + ",paperSizeFieldName,Y");
-		reqFields.add(jidField + ",jobIdFieldName,Y");
-		reqFields.add(mscField + ",mscFieldName,Y");
-		reqFields.add(presentationPriorityConfigPath + ",presentationPriorityConfigPath,N");
-		reqFields.add(presentationPriorityFileSuffix + ",presentationPriorityFileSuffix,N");
-		reqFields.add(productionConfigPath + ",productionConfigPath,N");
-		reqFields.add(productionFileSuffix + ",productionFileSuffix,N");
-		reqFields.add(postageConfigPath + ",postageConfigPath,N");
-		reqFields.add(postageFileSuffix + ",postageFileSuffix,N");
-		reqFields.add(sortField + ",sortField,Y");
-		reqFields.add(name1Field + ",name1Field,Y");
-		reqFields.add(name2Field + ",name2Field,Y");
-		reqFields.add(add1Field + ",address1Field,Y");
-		reqFields.add(add2Field + ",address2Field,Y");
-		reqFields.add(add3Field + ",address3Field,Y");
-		reqFields.add(add4Field + ",address4Field,Y");
-		reqFields.add(add5Field + ",address5Field,Y");
-		reqFields.add(pcField + ",postCodeField,Y");
-		reqFields.add(dpsField + ",dpsField,Y");
-		reqFields.add(insertLookup + ",insertLookup,N");
-		reqFields.add(envelopeLookup + ",envelopeLookup,N");
-		reqFields.add(stationeryLookup + ",stationeryLookup,N");
-		reqFields.add(insertField + ",insertField,Y");
-		reqFields.add(mmBarContent + ",mailMarkBarcodeContent,Y");
-		reqFields.add(eogField + ",eogField,Y");
-		reqFields.add(eotField + ",eotField,Y");
-		reqFields.add(seqField + ",childSequence,Y");
-		reqFields.add(outEnv + ",outerEnvelope,Y");
-		reqFields.add(mailingProduct + ",mailingProduct,Y");
-		reqFields.add(totalNumberOfPagesInGroupField + ",totalNumberOfPagesInGroupField,Y");
-		reqFields.add(insertHopperCodeField + ",insertHopperCodeField,Y");
-		reqFields.add(mmCustomerContent + ",mailMarkBarcodeCustomerContent,Y");
+		List<RequiredField> reqFields = new ArrayList<RequiredField>();
+		reqFields.add(new RequiredField(docRef, "documentReference", true));
+		reqFields.add(new RequiredField(noOfPages, "noOfPagesField", true));
+		reqFields.add(new RequiredField(lang, "languageFieldName", true));
+		reqFields.add(new RequiredField(stat, "stationeryFieldName", true));
+		reqFields.add(new RequiredField(batchType, "batchTypeFieldName", true));
+		reqFields.add(new RequiredField(subBatch, "subBatchTypeFieldName", true));
+		reqFields.add(new RequiredField(selectorRef, "lookupReferenceFieldName", true));
+		reqFields.add(new RequiredField(site, "siteFieldName", true));
+		reqFields.add(new RequiredField(fleetNo, "fleetNoFieldName", true));
+		reqFields.add(new RequiredField(groupId, "groupIdFieldName", true));
+		reqFields.add(new RequiredField(paperSize, "paperSizeFieldName", true));
+		reqFields.add(new RequiredField(jidField, "jobIdFieldName", true));
+		reqFields.add(new RequiredField(mscField, "mscFieldName", true));
+		reqFields.add(new RequiredField(presentationPriorityConfigPath, "presentationPriorityConfigPath", false));
+		reqFields.add(new RequiredField(presentationPriorityFileSuffix, "presentationPriorityFileSuffix", false));
+		reqFields.add(new RequiredField(productionConfigPath, "productionConfigPath", false));
+		reqFields.add(new RequiredField(productionFileSuffix, "productionFileSuffix", false));
+		reqFields.add(new RequiredField(postageConfigPath, "postageConfigPath", false));
+		reqFields.add(new RequiredField(postageFileSuffix, "postageFileSuffix", false));
+		reqFields.add(new RequiredField(sortField, "sortField", true));
+		reqFields.add(new RequiredField(name1Field, "name1Field", true));
+		reqFields.add(new RequiredField(name2Field, "name2Field", true));
+		reqFields.add(new RequiredField(add1Field, "address1Field", true));
+		reqFields.add(new RequiredField(add2Field, "address2Field", true));
+		reqFields.add(new RequiredField(add3Field, "address3Field", true));
+		reqFields.add(new RequiredField(add4Field, "address4Field", true));
+		reqFields.add(new RequiredField(add5Field, "address5Field", true));
+		reqFields.add(new RequiredField(pcField, "postCodeField", true));
+		reqFields.add(new RequiredField(dpsField, "dpsField", true));
+		reqFields.add(new RequiredField(insertLookup, "insertLookup", false));
+		reqFields.add(new RequiredField(envelopeLookup, "envelopeLookup", false));
+		reqFields.add(new RequiredField(stationeryLookup, "stationeryLookup", false));
+		reqFields.add(new RequiredField(insertField, "insertField", true));
+		reqFields.add(new RequiredField(mmBarContent, "mailMarkBarcodeContent", true));
+		reqFields.add(new RequiredField(eogField, "eogField", true));
+		reqFields.add(new RequiredField(eotField, "eotField", true));
+		reqFields.add(new RequiredField(seqField, "childSequence", true));
+		reqFields.add(new RequiredField(outEnv, "outerEnvelope", true));
+		reqFields.add(new RequiredField(mailingProduct, "mailingProduct", true));
+		reqFields.add(new RequiredField(totalNumberOfPagesInGroupField, "totalNumberOfPagesInGroupField", true));
+		reqFields.add(new RequiredField(insertHopperCodeField, "insertHopperCodeField", true));
+		reqFields.add(new RequiredField(mmCustomerContent, "mailMarkBarcodeCustomerContent", true));
 		
-		
-		for(String str : reqFields){
-			String[] split = str.split(",");
-			if ( "null".equals(split[0])){
-				LOGGER.fatal("Field '{}' not in properties file {}.",split[1],propsFile);
+		for(RequiredField requiredField : reqFields){
+
+			if ( requiredField.getAttibuteValue() == null || "null".equals(requiredField.getAttibuteValue())){
+				LOGGER.fatal("Field '{}' not in properties file {}.",requiredField.getAttibuteName(), propsFile);
 				System.exit(1);
 			}else{
-				if( !(headers.contains(split[0])) && "Y".equals(split[2]) ){
-					LOGGER.fatal("Field '{}' not found in input file {}.",split[1],input);
+				if( !(headers.contains(requiredField.getAttibuteValue())) && requiredField.isRequiredInInputFile() ){
+					LOGGER.fatal("Field '{}' not found in input file {}.",requiredField.getAttibuteValue(),input);
 					System.exit(1);
 				}
 			}
