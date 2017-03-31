@@ -17,7 +17,7 @@ public class CalculateWeightsAndSizes {
 	StationeryLookup stationeryLookup=null;
 	EnvelopeLookup envelopeLookup=null;
 	ProductionConfiguration pc=null;
-	ArrayList<Customer> customers;
+	ArrayList<Customer> customers = null;
 	
 	public CalculateWeightsAndSizes(ArrayList<Customer> customers, 
 			InsertLookup insertLookup,

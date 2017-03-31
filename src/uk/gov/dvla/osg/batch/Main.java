@@ -1,14 +1,11 @@
 package uk.gov.dvla.osg.batch;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -25,6 +22,7 @@ import uk.gov.dvla.osg.common.classes.EnvelopeLookup;
 import uk.gov.dvla.osg.common.classes.InsertLookup;
 import uk.gov.dvla.osg.common.classes.PostageConfiguration;
 import uk.gov.dvla.osg.common.classes.ProductionConfiguration;
+import uk.gov.dvla.osg.common.classes.DocPropField;
 import uk.gov.dvla.osg.common.classes.RpdFileHandler;
 import uk.gov.dvla.osg.common.classes.SelectorLookup;
 import uk.gov.dvla.osg.common.classes.StationeryLookup;
@@ -34,7 +32,7 @@ public class Main {
 	
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static Properties CONFIG;
-	private static final int EXPECTED_NO_OF_ARGS = 5;
+	private static final int EXPECTED_NO_OF_ARGS = 6;
 	private static SelectorLookup lookup;
 	static ArrayList<Customer> customers;
 	static List<String> headerRecords;
@@ -50,7 +48,7 @@ public class Main {
 	static InsertLookup il;
 	
 	//Argument Strings
-	static String input, output, propsFile, jid, runNo, lookupFile;
+	static String input, output, propsFile, jid, runNo, lookupFile, parentJid;
 
 	//Properties strings
 	static String docRef, noOfPages, lang, stat, batchType, subBatch, selectorRef, site, fleetNo, groupId,
@@ -59,7 +57,9 @@ public class Main {
 	name1Field, name2Field, add1Field, add2Field, add3Field, add4Field, add5Field, pcField,
 	dpsField, insertLookup, envelopeLookup, stationeryLookup, insertField, mmBarContent, eogField,
 	eotField, seqField, outEnv, mailingProduct, totalNumberOfPagesInGroupField, insertHopperCodeField, 
-	mmCustomerContent;
+	mmCustomerContent, tenDigitJid, tenDigitJobIdIncrementValue;
+	
+	
 
 	public static void main(String[] args) {
 		LOGGER.info("Starting uk.gov.dvla.osg.batch.Main");
@@ -83,9 +83,9 @@ public class Main {
 		CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers, productionConfig);
 		CheckCompliance cc = new CheckCompliance(customers, productionConfig, postageConfig, presLookup);
 		calculateActualMailProduct(cc);
-		sortCustomers(customers, new CustomerComparatorWithLocation()); //also orig
+		sortCustomers(customers, new CustomerComparatorWithLocation());
 		CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
-		BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig);
+		BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig, tenDigitJid, tenDigitJobIdIncrementValue);
 		CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct );
 		sortCustomers(customers, new CustomerComparatorOriginalOrder());
 		writeResultsToFile();
@@ -119,8 +119,7 @@ public class Main {
 		int batchTypeIdx = fileMap.get(batchType);
 		int totalNumberOfPagesInGroupFieldIdx = fileMap.get(totalNumberOfPagesInGroupField);
 		int insertHopperCodeFieldIdx = fileMap.get(insertHopperCodeField);
-		
-		
+		int tenDigitJidIdx = fileMap.get(tenDigitJid);
 		
 		try {
 			while ((readLine = bu.readLine()) != null) {
@@ -169,6 +168,8 @@ public class Main {
 						list.add("" + customers.get(i).getTotalPagesInGroup());
 					}else if( x == insertHopperCodeFieldIdx && !(customers.get(i).getInsertRef().trim().isEmpty()) ){
 						list.add("" + il.getLookup().get(customers.get(i).getInsertRef().trim()).getHopperCode() );
+					}else if( x == tenDigitJidIdx ){
+						list.add("" + customers.get(i).getTenDigitJid());
 					}else {
 						list.add(split[x]);
 					}
@@ -400,51 +401,55 @@ public class Main {
 	private static void ensureRequiredPropsAreSet(List<String> headers) {
 		
 		//reqFields is used to validate input, the Y signifies that the field should be present in the input file
-		List<RequiredField> reqFields = new ArrayList<RequiredField>();
-		reqFields.add(new RequiredField(docRef, "documentReference", true));
-		reqFields.add(new RequiredField(noOfPages, "noOfPagesField", true));
-		reqFields.add(new RequiredField(lang, "languageFieldName", true));
-		reqFields.add(new RequiredField(stat, "stationeryFieldName", true));
-		reqFields.add(new RequiredField(batchType, "batchTypeFieldName", true));
-		reqFields.add(new RequiredField(subBatch, "subBatchTypeFieldName", true));
-		reqFields.add(new RequiredField(selectorRef, "lookupReferenceFieldName", true));
-		reqFields.add(new RequiredField(site, "siteFieldName", true));
-		reqFields.add(new RequiredField(fleetNo, "fleetNoFieldName", true));
-		reqFields.add(new RequiredField(groupId, "groupIdFieldName", true));
-		reqFields.add(new RequiredField(paperSize, "paperSizeFieldName", true));
-		reqFields.add(new RequiredField(jidField, "jobIdFieldName", true));
-		reqFields.add(new RequiredField(mscField, "mscFieldName", true));
-		reqFields.add(new RequiredField(presentationPriorityConfigPath, "presentationPriorityConfigPath", false));
-		reqFields.add(new RequiredField(presentationPriorityFileSuffix, "presentationPriorityFileSuffix", false));
-		reqFields.add(new RequiredField(productionConfigPath, "productionConfigPath", false));
-		reqFields.add(new RequiredField(productionFileSuffix, "productionFileSuffix", false));
-		reqFields.add(new RequiredField(postageConfigPath, "postageConfigPath", false));
-		reqFields.add(new RequiredField(postageFileSuffix, "postageFileSuffix", false));
-		reqFields.add(new RequiredField(sortField, "sortField", true));
-		reqFields.add(new RequiredField(name1Field, "name1Field", true));
-		reqFields.add(new RequiredField(name2Field, "name2Field", true));
-		reqFields.add(new RequiredField(add1Field, "address1Field", true));
-		reqFields.add(new RequiredField(add2Field, "address2Field", true));
-		reqFields.add(new RequiredField(add3Field, "address3Field", true));
-		reqFields.add(new RequiredField(add4Field, "address4Field", true));
-		reqFields.add(new RequiredField(add5Field, "address5Field", true));
-		reqFields.add(new RequiredField(pcField, "postCodeField", true));
-		reqFields.add(new RequiredField(dpsField, "dpsField", true));
-		reqFields.add(new RequiredField(insertLookup, "insertLookup", false));
-		reqFields.add(new RequiredField(envelopeLookup, "envelopeLookup", false));
-		reqFields.add(new RequiredField(stationeryLookup, "stationeryLookup", false));
-		reqFields.add(new RequiredField(insertField, "insertField", true));
-		reqFields.add(new RequiredField(mmBarContent, "mailMarkBarcodeContent", true));
-		reqFields.add(new RequiredField(eogField, "eogField", true));
-		reqFields.add(new RequiredField(eotField, "eotField", true));
-		reqFields.add(new RequiredField(seqField, "childSequence", true));
-		reqFields.add(new RequiredField(outEnv, "outerEnvelope", true));
-		reqFields.add(new RequiredField(mailingProduct, "mailingProduct", true));
-		reqFields.add(new RequiredField(totalNumberOfPagesInGroupField, "totalNumberOfPagesInGroupField", true));
-		reqFields.add(new RequiredField(insertHopperCodeField, "insertHopperCodeField", true));
-		reqFields.add(new RequiredField(mmCustomerContent, "mailMarkBarcodeCustomerContent", true));
+		List<DocPropField> reqFields = new ArrayList<DocPropField>();
+		reqFields.add(new DocPropField(docRef, "documentReference", true));
+		reqFields.add(new DocPropField(noOfPages, "noOfPagesField", true));
+		reqFields.add(new DocPropField(lang, "languageFieldName", true));
+		reqFields.add(new DocPropField(stat, "stationeryFieldName", true));
+		reqFields.add(new DocPropField(batchType, "batchTypeFieldName", true));
+		reqFields.add(new DocPropField(subBatch, "subBatchTypeFieldName", true));
+		reqFields.add(new DocPropField(selectorRef, "lookupReferenceFieldName", true));
+		reqFields.add(new DocPropField(site, "siteFieldName", true));
+		reqFields.add(new DocPropField(fleetNo, "fleetNoFieldName", true));
+		reqFields.add(new DocPropField(groupId, "groupIdFieldName", true));
+		reqFields.add(new DocPropField(paperSize, "paperSizeFieldName", true));
+		reqFields.add(new DocPropField(jidField, "jobIdFieldName", true));
+		reqFields.add(new DocPropField(mscField, "mscFieldName", true));
+		reqFields.add(new DocPropField(presentationPriorityConfigPath, "presentationPriorityConfigPath", false));
+		reqFields.add(new DocPropField(presentationPriorityFileSuffix, "presentationPriorityFileSuffix", false));
+		reqFields.add(new DocPropField(productionConfigPath, "productionConfigPath", false));
+		reqFields.add(new DocPropField(productionFileSuffix, "productionFileSuffix", false));
+		reqFields.add(new DocPropField(postageConfigPath, "postageConfigPath", false));
+		reqFields.add(new DocPropField(postageFileSuffix, "postageFileSuffix", false));
+		reqFields.add(new DocPropField(sortField, "sortField", true));
+		reqFields.add(new DocPropField(name1Field, "name1Field", true));
+		reqFields.add(new DocPropField(name2Field, "name2Field", true));
+		reqFields.add(new DocPropField(add1Field, "address1Field", true));
+		reqFields.add(new DocPropField(add2Field, "address2Field", true));
+		reqFields.add(new DocPropField(add3Field, "address3Field", true));
+		reqFields.add(new DocPropField(add4Field, "address4Field", true));
+		reqFields.add(new DocPropField(add5Field, "address5Field", true));
+		reqFields.add(new DocPropField(pcField, "postCodeField", true));
+		reqFields.add(new DocPropField(dpsField, "dpsField", true));
+		reqFields.add(new DocPropField(insertLookup, "insertLookup", false));
+		reqFields.add(new DocPropField(envelopeLookup, "envelopeLookup", false));
+		reqFields.add(new DocPropField(stationeryLookup, "stationeryLookup", false));
+		reqFields.add(new DocPropField(insertField, "insertField", true));
+		reqFields.add(new DocPropField(mmBarContent, "mailMarkBarcodeContent", true));
+		reqFields.add(new DocPropField(eogField, "eogField", true));
+		reqFields.add(new DocPropField(eotField, "eotField", true));
+		reqFields.add(new DocPropField(seqField, "childSequence", true));
+		reqFields.add(new DocPropField(outEnv, "outerEnvelope", true));
+		reqFields.add(new DocPropField(mailingProduct, "mailingProduct", true));
+		reqFields.add(new DocPropField(totalNumberOfPagesInGroupField, "totalNumberOfPagesInGroupField", true));
+		reqFields.add(new DocPropField(insertHopperCodeField, "insertHopperCodeField", true));
+		reqFields.add(new DocPropField(mmCustomerContent, "mailMarkBarcodeCustomerContent", true));
+		reqFields.add(new DocPropField(tenDigitJid, "TenDigitJobId", true));
+		reqFields.add(new DocPropField(tenDigitJobIdIncrementValue, "tenDigitJobIdIncrementValue",false));
 		
-		for(RequiredField requiredField : reqFields){
+		
+		
+		for(DocPropField requiredField : reqFields){
 
 			if ( requiredField.getAttibuteValue() == null || "null".equals(requiredField.getAttibuteValue())){
 				LOGGER.fatal("Field '{}' not in properties file {}.",requiredField.getAttibuteName(), propsFile);
@@ -501,6 +506,8 @@ public class Main {
 		totalNumberOfPagesInGroupField = CONFIG.getProperty("totalNumberOfPagesInGroupField");
 		insertHopperCodeField = CONFIG.getProperty("insertHopperCodeField");
 		mmCustomerContent = CONFIG.getProperty("mailMarkBarcodeCustomerContent");
+		tenDigitJid = CONFIG.getProperty("tenDigitJobId");
+		tenDigitJobIdIncrementValue = CONFIG.getProperty("tenDigitJobIdIncrementValue");
 	}
 
 	private static void loadSelectorLookupFile() {
@@ -541,11 +548,12 @@ public class Main {
 		propsFile = args[2];
 		jid = args[3];
 		runNo = args[4];
+		parentJid = args[5];
 	}
 
 	private static void validateNumberOfArgs(String[] args) {
 		if( args.length != EXPECTED_NO_OF_ARGS ){
-			LOGGER.fatal("Incorrect number of args parsed '{}' expecting '{}'. Args are 1.input file, 2.output file, 3.props file, 4.jobId, 5.Runno.",args.length,EXPECTED_NO_OF_ARGS);
+			LOGGER.fatal("Incorrect number of args parsed '{}' expecting '{}'. Args are 1.input file, 2.output file, 3.props file, 4.jobId, 5.Runno 6.ParentJid.",args.length,EXPECTED_NO_OF_ARGS);
 			System.exit(1);
 		}
 	}
