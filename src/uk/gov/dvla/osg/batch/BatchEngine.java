@@ -151,14 +151,14 @@ public class BatchEngine {
 		boolean continueLooking = true;
 		
 		if(ascending){
-			for( count = cusIdx; continueLooking ; count -- ){
+			for( count = cusIdx; continueLooking ; count ++ ){
 				if( "X".equalsIgnoreCase(input.get(count).getEog()) ){
 					continueLooking=false;
 					break;
 				}
 			}
 		} else {
-			for( count = cusIdx; continueLooking ; count ++ ){
+			for( count = cusIdx; continueLooking ; count -- ){
 				if( "X".equalsIgnoreCase(input.get(count).getEog()) ){
 					continueLooking=false;
 					break;
