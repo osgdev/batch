@@ -39,6 +39,7 @@ public class BatchEngine {
 		int cusIdx = 0;
 		int mscCounter = 0;
 		int tenDigitJid = jid + jidInc;
+		int lastEogIdx = 0;
 		
 		for (Customer customer : input){
 			pageCount = pageCount + customer.getNoOfPages();
@@ -53,6 +54,7 @@ public class BatchEngine {
 			
 			if( "X".equalsIgnoreCase(customer.getEog()) ){
 				mscCounter ++;
+				lastEogIdx=cusIdx;
 			}
 			
 			batchMax = getBatchMax(customer.getLang(), customer.getBatchType());
@@ -62,7 +64,7 @@ public class BatchEngine {
 					(prev.getSubBatch().equals(customer.getSubBatch())) &&
 					(prev.getSite().equals(customer.getSite())) &&
 					(prev.getStationery().equals(customer.getStationery())) &&
-					(pageCount < (batchMax + 1)) ){
+					(pageCount < (batchMax)) ){
 				
 				//SAME BATCH
 				customer.setJid(parentJid + "." + batchSequence);
@@ -71,59 +73,29 @@ public class BatchEngine {
 			}else{
 				//NEW BATCH
 				LOGGER.info("Creating new batch..");
-				
-				if( (mscCounter < postConfig.getUkmMinimumTrayVolume() && 
-					postConfig.getUkmBatchTypes().contains(customer.getBatchType()) && 
-					prev.getBatchType().equals(customer.getBatchType())) ||
-					!("X".equalsIgnoreCase(customer.getEog())) ){
-					
-					if( !("X".equalsIgnoreCase(customer.getEog())) ){
-						if( postConfig.getUkmBatchTypes().contains(customer.getBatchType()) ){
-							LOGGER.info("Customer '{}' is not EOG, adjustment required",customer.getDocRef());
-							boolean match = true;
-							int count = 0;
-							
-							int startAdjustmentIdx = getNextEndOfGroupStartingFromIdx(cusIdx, false);
-							pid = adjustBatchStartingFromIdx(startAdjustmentIdx, cusIdx, batchSequence, tenDigitJid, jidInc);
-							
-						} else {
-							customer.setEog("X");
-						}
-					} 
-
-					String mscForAdjusting = input.get(cusIdx-1).getMsc();
-					LOGGER.info("Adjustment required for customer '{}', msc that needs adjusting={} number of groups={} idx={}",customer.getDocRef(),mscForAdjusting,mscCounter,cusIdx);
-					
-					boolean match = true;
-					int startIdx = cusIdx;
-					for( int count = cusIdx; match ; count -- ){
-						if( !(input.get(count).getMsc().equals(mscForAdjusting) ) ){
-							startIdx = count + 1;
-							match=false;
-							break;
-						}
-					}
-					
-					LOGGER.info("Need to start adjusting from idx {} line {}",startIdx,startIdx+1 );
-					int nextPid = adjustBatchStartingFromIdx(startIdx, cusIdx, batchSequence, tenDigitJid, jidInc);
-					
-					
-					batchSequence ++;
-					tenDigitJid = tenDigitJid + jidInc;
-					pid=nextPid;
-					pageCount = 0;
-					customer.setJid(parentJid + "." + batchSequence);
-					customer.setTenDigitJid(tenDigitJid);
-					
-				} else {
-				
-					batchSequence ++;
-					tenDigitJid = tenDigitJid + jidInc;
-					pid=1;
-					pageCount = 0;// customer.getNoOfPages();
-					customer.setJid(parentJid + "." + batchSequence);
-					customer.setTenDigitJid(tenDigitJid);
+				pid = 1;
+				if( (mscCounter < postConfig.getUkmMinimumTrayVolume()) && 
+						postConfig.getUkmBatchTypes().contains(customer.getBatchType())){
+					LOGGER.debug("Attempting to batch at idx '{}', customer doc ref '{}'. Number of MSC in group = {} need a minimum of {}",cusIdx, customer.getDocRef(), mscCounter, postConfig.getUkmMinimumTrayVolume());	
+					int startAdjustmentIdx = getChangeOfMscIdx(cusIdx, customer.getMsc() ,false);
+					pid = adjustBatchStartingFromIdx(startAdjustmentIdx, cusIdx, batchSequence, tenDigitJid, jidInc);
 				}
+				
+				if( !("X".equalsIgnoreCase(customer.getEog())) ){
+					LOGGER.debug("Attempting to batch at idx '{}', customer doc ref '{}'. Customer is not EOG and is in a {} batch",cusIdx, customer.getDocRef(), customer.getBatchType());
+					if( postConfig.getUkmBatchTypes().contains(customer.getBatchType()) ){
+						int startAdjustmentIdx = getNextEndOfGroupStartingFromIdx(cusIdx, false);
+						pid = adjustBatchStartingFromIdx(startAdjustmentIdx, cusIdx, batchSequence, tenDigitJid, jidInc);
+					} else {
+						customer.setEog("X");
+					}
+				}
+
+				batchSequence ++;
+				tenDigitJid = tenDigitJid + jidInc;
+				pageCount = 0;
+				customer.setJid(parentJid + "." + batchSequence);
+				customer.setTenDigitJid(tenDigitJid);
 				mscCounter=0;
 			}
 			prev = customer;
@@ -160,6 +132,28 @@ public class BatchEngine {
 		} else {
 			for( count = cusIdx; continueLooking ; count -- ){
 				if( "X".equalsIgnoreCase(input.get(count).getEog()) ){
+					continueLooking=false;
+					break;
+				}
+			}
+		}
+		return count;
+	}
+	
+	private int getChangeOfMscIdx(int cusIdx, String currentMsc, boolean ascending) {
+		int count = 0;
+		boolean continueLooking = true;
+		
+		if(ascending){
+			for( count = cusIdx; continueLooking ; count ++ ){
+				if( !(currentMsc.equalsIgnoreCase(input.get(count).getMsc())) ){
+					continueLooking=false;
+					break;
+				}
+			}
+		} else {
+			for( count = cusIdx; continueLooking ; count -- ){
+				if( !(currentMsc.equalsIgnoreCase(input.get(count).getMsc())) ){
 					continueLooking=false;
 					break;
 				}
