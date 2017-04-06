@@ -82,6 +82,7 @@ public class Main {
 		sortCustomers(customers, new CustomerComparatorWithLocation());
 		CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers, productionConfig);
 		CheckCompliance cc = new CheckCompliance(customers, productionConfig, postageConfig, presLookup);
+		sortCustomers(customers, new CustomerComparatorWithLocation());
 		calculateActualMailProduct(cc);
 		sortCustomers(customers, new CustomerComparatorWithLocation());
 		CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
@@ -200,7 +201,8 @@ public class Main {
 				//CHANGE BATCH TYPE TO UNSORTED FOR ALL SORTED
 				if("SORTED".equalsIgnoreCase(customer.getBatchType()) ){
 					//LOGGER.info("Changing batch type '{}' to UNSORTED",customer.getBatchType());
-					customer.setBatchType("UNSORTED");
+					customer.updateBatchType("UNSORTED", presLookup);
+					
 				}
 				customer.setProduct(actualMailProduct);
 			}

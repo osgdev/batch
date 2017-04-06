@@ -87,7 +87,7 @@ public class CheckCompliance {
 				LOGGER.info("Adjusting {} mscs",mscsToAdjust.size());
 				for(Customer cus : customers){
 					if( mscsToAdjust.contains(cus.getLang() + cus.getBatchType() + cus.getSubBatch() + cus.getMsc()) ){
-						cus.setBatchType("UNSORTED");
+						cus.updateBatchType("UNSORTED", presLookup);
 						cus.setEog("X");
 						cus.setPresentationPriority(presLookup.get("UNSORTED"));
 					}
