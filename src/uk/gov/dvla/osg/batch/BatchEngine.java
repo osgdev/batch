@@ -61,7 +61,13 @@ public class BatchEngine {
 				pid = 1;
 				if( adjustmentIsRequired(cusIdx) ){
 					pid = adjustBatch(cusIdx);
+				} else {
+					if( !(customerIsEog(cusIdx - 1)) ){
+						input.get(cusIdx - 1).setEog("X");
+					}
 				}
+				
+				
 				
 				batchSequence ++;
 				tenDigitJid = tenDigitJid + jidInc;
@@ -79,6 +85,16 @@ public class BatchEngine {
 		
 	}
 	
+
+	private boolean customerIsEog(int cusIdx) {
+		boolean result = false;
+		if( "X".equalsIgnoreCase(input.get(cusIdx).getEog()) ){
+			result = true;
+		}
+		LOGGER.debug("previousBatchEndsInEog({}) returned '{}'",cusIdx ,result);
+		return result;
+	}
+
 	private boolean isPartOfSameBatch(Customer customer, Customer prev){
 		boolean result = false;
 		if( (prev.getLang().equals(customer.getLang()) ) && 
