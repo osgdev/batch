@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import uk.gov.dvla.osg.common.classes.Customer;
+import uk.gov.dvla.osg.common.classes.PapersizeLookup;
 import uk.gov.dvla.osg.common.classes.PostageConfiguration;
 import uk.gov.dvla.osg.common.classes.ProductionConfiguration;
 
@@ -16,17 +17,19 @@ public class BatchEngine {
 	private List<Customer> input;
 	private ProductionConfiguration prodConfig;
 	private PostageConfiguration postConfig;
+	private PapersizeLookup pl;
 	private String parentJid;
 	private int jid, jidInc, tenDigitJid, batchSequence, batchMax, pageCount;
 	
 	
-	public BatchEngine(String parentJid, List<Customer> input, ProductionConfiguration prodConfig, PostageConfiguration postConfig, String jid , String jidInc){
+	public BatchEngine(String parentJid, List<Customer> input, ProductionConfiguration prodConfig, PostageConfiguration postConfig, String jid , String jidInc, PapersizeLookup pl){
 		this.parentJid=parentJid;
 		this.input=input;
 		this.prodConfig=prodConfig;
 		this.postConfig=postConfig;
 		this.jid=Integer.parseInt(jid);
 		this.jidInc=Integer.parseInt(jidInc);
+		this.pl=pl;
 		batch();
 	}
 	
@@ -47,7 +50,7 @@ public class BatchEngine {
 				prev = customer;
 				firstCustomer=false;
 			}
-			batchMax = getBatchMax(customer.getLang(), customer.getBatchType());
+			batchMax = getBatchMax(customer.getLang(), customer.getBatchType(), customer.getPaperSize());
 			
 			if( isPartOfSameBatch(customer, prev) ){
 				
@@ -333,7 +336,7 @@ public class BatchEngine {
 		return result;
 	}
 
-	private int getBatchMax(String lang, String batchType) {
+	private int getBatchMax(String lang, String batchType, String paperSize) {
 		int batchMax =0;
 		if( "E".equalsIgnoreCase(lang) ){
 			switch (batchType) {
@@ -365,6 +368,9 @@ public class BatchEngine {
 				case "MULTI" : batchMax = prodConfig.getBatchMaxWelshMulti();
 				break;
 			}
+		}
+		if( pl.getLookup().containsKey(paperSize) ){
+			batchMax = (int) (batchMax * pl.getLookup().get(paperSize).getMultiplier());
 		}
 		return batchMax;
 	}

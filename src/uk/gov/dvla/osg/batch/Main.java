@@ -20,6 +20,7 @@ import org.apache.logging.log4j.Logger;
 import uk.gov.dvla.osg.common.classes.Customer;
 import uk.gov.dvla.osg.common.classes.EnvelopeLookup;
 import uk.gov.dvla.osg.common.classes.InsertLookup;
+import uk.gov.dvla.osg.common.classes.PapersizeLookup;
 import uk.gov.dvla.osg.common.classes.PostageConfiguration;
 import uk.gov.dvla.osg.common.classes.ProductionConfiguration;
 import uk.gov.dvla.osg.common.classes.DocPropField;
@@ -46,6 +47,7 @@ public class Main {
 	static StationeryLookup sl;
 	static EnvelopeLookup el;
 	static InsertLookup il;
+	static PapersizeLookup pl;
 	
 	//Argument Strings
 	static String input, output, propsFile, jid, runNo, lookupFile, parentJid;
@@ -57,7 +59,7 @@ public class Main {
 	name1Field, name2Field, add1Field, add2Field, add3Field, add4Field, add5Field, pcField,
 	dpsField, insertLookup, envelopeLookup, stationeryLookup, insertField, mmBarContent, eogField,
 	eotField, seqField, outEnv, mailingProduct, totalNumberOfPagesInGroupField, insertHopperCodeField, 
-	mmCustomerContent, tenDigitJid, tenDigitJobIdIncrementValue;
+	mmCustomerContent, tenDigitJid, tenDigitJobIdIncrementValue, papersizeLookup;
 	
 	
 
@@ -74,6 +76,7 @@ public class Main {
 		sl = new StationeryLookup(stationeryLookup);
 		el = new EnvelopeLookup(envelopeLookup);
 		il = new InsertLookup(insertLookup);
+		pl = new PapersizeLookup(papersizeLookup);
 		
 		ensureRequiredPropsAreSet(headerRecords);
 		generateCustomersFromInputFile();
@@ -86,7 +89,7 @@ public class Main {
 		calculateActualMailProduct(cc);
 		sortCustomers(customers, new CustomerComparatorWithLocation());
 		CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
-		BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig, parentJid, tenDigitJobIdIncrementValue);
+		BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig, parentJid, tenDigitJobIdIncrementValue, pl);
 		CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct );
 		sortCustomers(customers, new CustomerComparatorOriginalOrder());
 		writeResultsToFile();
@@ -448,6 +451,7 @@ public class Main {
 		reqFields.add(new DocPropField(mmCustomerContent, "mailMarkBarcodeCustomerContent", true));
 		reqFields.add(new DocPropField(tenDigitJid, "TenDigitJobId", true));
 		reqFields.add(new DocPropField(tenDigitJobIdIncrementValue, "tenDigitJobIdIncrementValue",false));
+		reqFields.add(new DocPropField(papersizeLookup,"papersizeLookup",false));
 		
 		
 		
@@ -510,6 +514,7 @@ public class Main {
 		mmCustomerContent = CONFIG.getProperty("mailMarkBarcodeCustomerContent");
 		tenDigitJid = CONFIG.getProperty("tenDigitJobId");
 		tenDigitJobIdIncrementValue = CONFIG.getProperty("tenDigitJobIdIncrementValue");
+		papersizeLookup = CONFIG.getProperty("papersizeLookup");
 	}
 
 	private static void loadSelectorLookupFile() {
