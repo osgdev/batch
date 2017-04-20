@@ -124,6 +124,7 @@ public class Main {
 		int totalNumberOfPagesInGroupFieldIdx = fileMap.get(totalNumberOfPagesInGroupField);
 		int insertHopperCodeFieldIdx = fileMap.get(insertHopperCodeField);
 		int tenDigitJidIdx = fileMap.get(tenDigitJid);
+		int mscIdx = fileMap.get(mscField);
 		
 		try {
 			while ((readLine = bu.readLine()) != null) {
@@ -162,6 +163,8 @@ public class Main {
 						}
 					}else if( x == seqFieldIdx ){
 						list.add("" + customers.get(i).getSequence());
+					}else if( x == mscIdx ){
+						list.add(customers.get(i).getMsc());
 					}else if( x == outEnvIdx ){
 						list.add(customers.get(i).getEnvelope());
 					}else if( x == mailingProductIdx ){

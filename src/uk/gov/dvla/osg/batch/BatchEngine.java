@@ -74,7 +74,7 @@ public class BatchEngine {
 				
 				batchSequence ++;
 				tenDigitJid = tenDigitJid + jidInc;
-				pageCount = 0;
+				pageCount = customer.getNoOfPages();
 				customer.setJid(parentJid + "." + batchSequence);
 				customer.setTenDigitJid(tenDigitJid);
 
@@ -105,7 +105,7 @@ public class BatchEngine {
 				(prev.getSubBatch().equals(customer.getSubBatch())) &&
 				(prev.getSite().equals(customer.getSite())) &&
 				(prev.getStationery().equals(customer.getStationery())) &&
-				(pageCount < (batchMax)) ){
+				(pageCount <= (batchMax)) ){
 			result = true;
 		} else {
 			result = false;
