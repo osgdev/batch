@@ -242,7 +242,7 @@ public class BatchEngine {
 	}
 
 	private boolean isMailsortable(int cusIdx) {
-		boolean result = postConfig.getUkmBatchTypes().contains(getPreviousBatchType(cusIdx));
+		boolean result = postConfig.getUkmBatchTypes().contains(getBatchType(cusIdx));
 		LOGGER.debug("isMailsortable({}) returned '{}'",cusIdx, result);
 		return result;
 	}
@@ -253,13 +253,13 @@ public class BatchEngine {
 				"X".equalsIgnoreCase(input.get(cusIdx).getEog()) ){
 			result = true;
 		}
-		LOGGER.debug("isAdjustmentRequiredForMultiWithEog({}) returned '{}'",cusIdx, result);
+		LOGGER.debug("adjustmentRequiredForMultiWithEog({}) returned '{}'",cusIdx, result);
 		return result;
 	}
 
-	private String getPreviousBatchType(int cusIdx) {
-		String result = input.get(cusIdx - 1).getBatchType();
-		LOGGER.info("getPreviousBatchType({}) returned '{}'",(cusIdx - 1), result);
+	private String getBatchType(int cusIdx) {
+		String result = input.get(cusIdx).getBatchType();
+		LOGGER.info("getPreviousBatchType({}) returned '{}'",(cusIdx), result);
 		return result;
 	}
 
