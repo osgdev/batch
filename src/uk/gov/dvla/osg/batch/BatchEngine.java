@@ -337,7 +337,7 @@ public class BatchEngine {
 	}
 
 	private int getBatchMax(String lang, String batchType, String paperSize) {
-		int batchMax =0;
+		int batchMax = 0;
 		if( "E".equalsIgnoreCase(lang) ){
 			switch (batchType) {
 				case "SORTED" : batchMax = prodConfig.getBatchMaxEnglishSorted();
@@ -351,6 +351,8 @@ public class BatchEngine {
 				case "CLERICAL" : batchMax = prodConfig.getBatchMaxEnglishClerical();
 				break;
 				case "MULTI" : batchMax = prodConfig.getBatchMaxEnglishMulti();
+				break;
+				case "REJECT" : batchMax = prodConfig.getBatchMaxEnglishReject();
 				break;
 			}
 		} else {
@@ -367,11 +369,14 @@ public class BatchEngine {
 				break;
 				case "MULTI" : batchMax = prodConfig.getBatchMaxWelshMulti();
 				break;
+				case "REJECT" : batchMax = prodConfig.getBatchMaxWelshReject();
+				break;
 			}
 		}
 		if( pl.getLookup().containsKey(paperSize) ){
 			batchMax = (int) (batchMax * pl.getLookup().get(paperSize).getMultiplier());
 		}
+		LOGGER.trace("getBatchMax(lang {}, batchType {}, paperSize {}) returned '{}'",lang, batchType, paperSize, batchMax);
 		return batchMax;
 	}
 
