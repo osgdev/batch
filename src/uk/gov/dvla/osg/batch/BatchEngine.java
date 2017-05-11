@@ -354,6 +354,9 @@ public class BatchEngine {
 				break;
 				case "REJECT" : batchMax = prodConfig.getBatchMaxEnglishReject();
 				break;
+				default: LOGGER.fatal("getBatchMax(lang {}, batchType {}, paperSize {}) has invalid batch type",lang, batchType, paperSize);
+					System.exit(1);
+				break;
 			}
 		} else {
 			switch (batchType) {
@@ -370,6 +373,9 @@ public class BatchEngine {
 				case "MULTI" : batchMax = prodConfig.getBatchMaxWelshMulti();
 				break;
 				case "REJECT" : batchMax = prodConfig.getBatchMaxWelshReject();
+				break;
+				default: LOGGER.fatal("getBatchMax(lang {}, batchType {}, paperSize {}) has invalid batch type",lang, batchType, paperSize);
+				System.exit(1);
 				break;
 			}
 		}
