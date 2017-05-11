@@ -42,6 +42,8 @@ public class CalculateLocation {
 		List<Customer> multiW = new ArrayList<Customer>();
 		List<Customer> sortingE = new ArrayList<Customer>();
 		List<Customer> sortingW = new ArrayList<Customer>();
+		List<Customer> rejectE = new ArrayList<Customer>();
+		List<Customer> rejectW = new ArrayList<Customer>();
 		
 		for(Customer customer : input){
 
@@ -88,11 +90,18 @@ public class CalculateLocation {
 						sortingW.add(customer);
 					};
 				break;
+				case "REJECT":
+					if("E".equals(customer.getLang())){
+						rejectE.add(customer);
+					}else{
+						rejectW.add(customer);
+					};
+				break;
 			}
 		}
 		
-		LOGGER.info("Batch contains:\nSORTED E{} W{}\nUNSORTED E{} W{}\nFLEET E{} W{}\nCLERICAL E{} W{}\nMULTI E{} W{}\nSORTING E{} W{}",
-				sortedE.size(),sortedW.size(), unsortedE.size(),unsortedW.size(),fleetE.size(),fleetW.size(),clericalE.size(),clericalW.size(),multiE.size(),multiW.size(),sortingE.size(),sortingW.size());
+		LOGGER.info("Batch contains:\nSORTED E{} W{}\nUNSORTED E{} W{}\nFLEET E{} W{}\nCLERICAL E{} W{}\nMULTI E{} W{}\nSORTING E{} W{}\nREJECT E{} W{}",
+				sortedE.size(),sortedW.size(), unsortedE.size(),unsortedW.size(),fleetE.size(),fleetW.size(),clericalE.size(),clericalW.size(),multiE.size(),multiW.size(),sortingE.size(),sortingW.size(),rejectE.size(),rejectW.size());
 		int sortedCount = 0;
 		int unsortedCount = 0;
 		Set<String> eFleetGroupsToFf = null;
@@ -108,6 +117,8 @@ public class CalculateLocation {
 		Integer wUnsortedToFf = null;
 		Integer eSortingtoFf = null;
 		Integer wSortingtoFf = null;
+		Integer eRejecttoFf = null;
+		Integer wRejecttoFf = null;
 
 		
 		for(Customer customer : input){
@@ -317,6 +328,46 @@ public class CalculateLocation {
 					}
 				}
 			}
+			
+			
+			if( "REJECT".equals(customer.getBatchType()) ){
+				if( "E".equals(customer.getLang()) ){
+					if( isNumeric(props.getEnglishReject()) ){
+						if(eRejecttoFf == null){
+							eRejecttoFf = (int) ( rejectE.size() * ( (float)Integer.parseInt(props.getEnglishReject()) / 100 ) );
+							sortedCount = 0;
+							LOGGER.info("Size of english reject= {}, FF set to {}",rejectE.size(),eRejecttoFf );
+						}
+						if (sortedCount < eRejecttoFf){
+							customer.setSite("f");
+							sortedCount ++;
+						}else{
+							customer.setSite("m");
+						}
+					} else {
+						setSite(customer, props.getEnglishReject());
+					}
+				}else{
+					if( isNumeric(props.getWelshReject()) ){
+						if(wRejecttoFf == null){
+							wRejecttoFf = (int) ( rejectW.size() * ( (float)Integer.parseInt(props.getWelshReject()) / 100 ) );
+							sortedCount = 0;
+							LOGGER.info("Size of welsh sorting= {}, FF set to {}",rejectW.size(),wRejecttoFf );
+						}
+						if (sortedCount < wRejecttoFf){
+							customer.setSite("f");
+							sortedCount ++;
+						}else{
+							customer.setSite("m");
+						}
+					} else {
+						setSite(customer, props.getWelshReject());
+					}
+				}
+			}
+			
+			
+			
 		}
 	}
 

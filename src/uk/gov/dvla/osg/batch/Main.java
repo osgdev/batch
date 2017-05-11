@@ -230,7 +230,7 @@ public class Main {
 						customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
 					}
 					customer.setProduct("UNSORTED");
-				}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) ){
+				}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) || "REJECT".equalsIgnoreCase(customer.getBatchType()) ){
 					customer.setEnvelope("");
 					customer.setProduct("");
 				}
@@ -254,7 +254,7 @@ public class Main {
 							customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
 						}
 						customer.setProduct("UNSORTED");
-					}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) ){
+					}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) || "REJECT".equalsIgnoreCase(customer.getBatchType()) ){
 						customer.setEnvelope("");
 						customer.setProduct("");
 					}
@@ -283,7 +283,7 @@ public class Main {
 							customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
 						}
 						customer.setProduct("UNSORTED");
-					}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) ){
+					}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) || "REJECT".equalsIgnoreCase(customer.getBatchType()) ){
 						customer.setEnvelope("");
 						customer.setProduct("");
 					}
