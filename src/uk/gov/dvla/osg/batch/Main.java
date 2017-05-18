@@ -63,7 +63,7 @@ public class Main {
 	name1Field, name2Field, add1Field, add2Field, add3Field, add4Field, add5Field, pcField,
 	dpsField, insertLookup, envelopeLookup, stationeryLookup, insertField, mmBarContent, eogField,
 	eotField, seqField, outEnv, mailingProduct, totalNumberOfPagesInGroupField, insertHopperCodeField, 
-	mmCustomerContent, tenDigitJid, tenDigitJobIdIncrementValue, papersizeLookup, mailmarkComplinacePath;
+	mmCustomerContent, tenDigitJid, tenDigitJobIdIncrementValue, papersizeLookup, mailmarkCompliancePath;
 	
 	
 
@@ -91,7 +91,7 @@ public class Main {
 		CheckCompliance cc = new CheckCompliance(customers, productionConfig, postageConfig, presLookup);
 		sortCustomers(customers, new CustomerComparatorWithLocation());
 		calculateActualMailProduct(cc);
-		writeStringToFile( getComplianceReportString(cc), mailmarkComplinacePath, true );
+		writeStringToFile( getComplianceReportString(cc), mailmarkCompliancePath, true );
 		sortCustomers(customers, new CustomerComparatorWithLocation());
 		CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
 		BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig, parentJid, tenDigitJobIdIncrementValue, pl);
@@ -524,7 +524,7 @@ public class Main {
 		tenDigitJid = CONFIG.getProperty("tenDigitJobId");
 		tenDigitJobIdIncrementValue = CONFIG.getProperty("tenDigitJobIdIncrementValue");
 		papersizeLookup = CONFIG.getProperty("papersizeLookup");
-		mailmarkComplinacePath = CONFIG.getProperty("mailmarkComplinacePath");
+		mailmarkCompliancePath = CONFIG.getProperty("mailmarkCompliancePath");
 	}
 
 	private static void loadSelectorLookupFile() {
