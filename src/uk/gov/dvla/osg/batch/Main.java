@@ -1,14 +1,18 @@
 package uk.gov.dvla.osg.batch;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,12 +22,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import uk.gov.dvla.osg.common.classes.Customer;
+import uk.gov.dvla.osg.common.classes.DocPropField;
 import uk.gov.dvla.osg.common.classes.EnvelopeLookup;
 import uk.gov.dvla.osg.common.classes.InsertLookup;
 import uk.gov.dvla.osg.common.classes.PapersizeLookup;
 import uk.gov.dvla.osg.common.classes.PostageConfiguration;
 import uk.gov.dvla.osg.common.classes.ProductionConfiguration;
-import uk.gov.dvla.osg.common.classes.DocPropField;
 import uk.gov.dvla.osg.common.classes.RpdFileHandler;
 import uk.gov.dvla.osg.common.classes.SelectorLookup;
 import uk.gov.dvla.osg.common.classes.StationeryLookup;
@@ -41,7 +45,7 @@ public class Main {
 	static ProductionConfiguration productionConfig;
 	static PostageConfiguration postageConfig;
 	static HashMap<String,Integer> fileMap;
-	static String actualMailProduct;
+	static String actualMailProduct, selectorName;
 	static Map<String,Integer> presLookup;
 	
 	static StationeryLookup sl;
@@ -59,7 +63,7 @@ public class Main {
 	name1Field, name2Field, add1Field, add2Field, add3Field, add4Field, add5Field, pcField,
 	dpsField, insertLookup, envelopeLookup, stationeryLookup, insertField, mmBarContent, eogField,
 	eotField, seqField, outEnv, mailingProduct, totalNumberOfPagesInGroupField, insertHopperCodeField, 
-	mmCustomerContent, tenDigitJid, tenDigitJobIdIncrementValue, papersizeLookup;
+	mmCustomerContent, tenDigitJid, tenDigitJobIdIncrementValue, papersizeLookup, mailmarkComplinacePath;
 	
 	
 
@@ -87,6 +91,7 @@ public class Main {
 		CheckCompliance cc = new CheckCompliance(customers, productionConfig, postageConfig, presLookup);
 		sortCustomers(customers, new CustomerComparatorWithLocation());
 		calculateActualMailProduct(cc);
+		writeStringToFile( getComplianceReportString(cc), mailmarkComplinacePath, true );
 		sortCustomers(customers, new CustomerComparatorWithLocation());
 		CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
 		BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig, parentJid, tenDigitJobIdIncrementValue, pl);
@@ -331,6 +336,7 @@ public class Main {
 						LOGGER.fatal("Selector '{}' not found in lookup '{}'",split[fileMap.get(selectorRef)],lookupFile);
 						System.exit(1);
 					}
+					selectorName=split[fileMap.get(selectorRef)];
 					presConfig = presentationPriorityConfigPath + lookup.get(split[fileMap.get(selectorRef)]).getPresentationConfig() + presentationPriorityFileSuffix;
 					if( !(new File(presConfig).exists()) ){
 						LOGGER.fatal("Lookup file='{}' doesn't exist",presConfig);
@@ -518,6 +524,7 @@ public class Main {
 		tenDigitJid = CONFIG.getProperty("tenDigitJobId");
 		tenDigitJobIdIncrementValue = CONFIG.getProperty("tenDigitJobIdIncrementValue");
 		papersizeLookup = CONFIG.getProperty("papersizeLookup");
+		mailmarkComplinacePath = CONFIG.getProperty("mailmarkComplinacePath");
 	}
 
 	private static void loadSelectorLookupFile() {
@@ -566,5 +573,39 @@ public class Main {
 			LOGGER.fatal("Incorrect number of args parsed '{}' expecting '{}'. Args are 1.input file, 2.output file, 3.props file, 4.jobId, 5.Runno 6.ParentJid.",args.length,EXPECTED_NO_OF_ARGS);
 			System.exit(1);
 		}
+	}
+	
+	private static void writeStringToFile(String str, String filepath, boolean append){
+		FileWriter fw = null;
+		BufferedWriter bw = null;
+		File file = new File(filepath);
+		try {
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+			fw = new FileWriter(file.getAbsoluteFile(), append);
+			bw = new BufferedWriter(fw);
+			bw.write(str);
+			//bw.newLine();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			try {
+				if (bw != null)
+					bw.close();
+				if (fw != null)
+					fw.close();
+			} catch (IOException ex) {
+				ex.printStackTrace();
+			}
+		}
+	}
+	
+	private static String getComplianceReportString(CheckCompliance cc){
+		return 	runNo + "," + 
+				selectorName + "," + 
+				new SimpleDateFormat("dd/MM/YY").format(new Date()) + "," + 
+				String.format("%.4g%n", cc.getDpsAccuracy());
 	}
 }
