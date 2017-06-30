@@ -205,10 +205,16 @@ public class BatchEngine {
 		int result = 0;
 		boolean mscsMatch = true;
 		String mscToMatch = input.get(cusIdx).getMsc();
+		
 		for( int i = cusIdx; mscsMatch; i++){
-			if( input.get(i).getMsc().equals(mscToMatch) ){
-				result ++;
-			} else {
+			if( i < input.size() ){
+				System.out.println(input.size() + " " + i + " " + cusIdx);
+				if( input.get(i).getMsc().equals(mscToMatch) ){
+					result ++;
+				} else {
+					mscsMatch = false;
+				}
+			}else{
 				mscsMatch = false;
 			}
 		}
@@ -231,11 +237,16 @@ public class BatchEngine {
 		boolean mscsMatch = true;
 		String mscToMatch = input.get(previousBatchIdx).getMsc();
 		for( int i = previousBatchIdx; mscsMatch; i--){
-			if( input.get(i).getMsc().equals(mscToMatch) ){
-				result ++;
+			if( i >= 0){
+				if( input.get(i).getMsc().equals(mscToMatch) ){
+					result ++;
+				} else {
+					mscsMatch = false;
+				}
 			} else {
 				mscsMatch = false;
 			}
+			
 		}
 		LOGGER.debug("countBackwardsEogsWithSameMsc({}) returned '{}'",previousBatchIdx, result);
 		return result;

@@ -49,6 +49,7 @@ public class CalculateWeightsAndSizes {
 			try{
 					
 				if(!( cus.getInsertRef().isEmpty() )){
+					
 					insertSize=insertLookup.getLookup().get(cus.getInsertRef()).getThickness();
 					insertWeight=insertLookup.getLookup().get(cus.getInsertRef()).getWeight();
 				}else{
@@ -61,6 +62,7 @@ public class CalculateWeightsAndSizes {
 				paperSize = stationeryLookup.getLookup().get(cus.getStationery()).getThickness() * envelopeLookup.getLookup().get(pc.getEnvelopeType()).getFoldMultiplier();
 				paperWeight = stationeryLookup.getLookup().get(cus.getStationery()).getWeight() * cus.getNoOfPages();
 			} catch (NullPointerException e){
+				LOGGER.fatal("Looking up insert '{}', envelope, '{}', stationery '{}'", cus.getInsertRef(), pc.getEnvelopeType(), cus.getStationery());
 				LOGGER.fatal("Envelope, Insert or Stationery lookup failed: '{}'", e.getMessage());
 				System.exit(1);
 			}
