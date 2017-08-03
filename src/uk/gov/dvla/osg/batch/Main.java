@@ -95,7 +95,7 @@ public class Main {
 		sortCustomers(customers, new CustomerComparatorWithLocation());
 		CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
 		BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig, parentJid, tenDigitJobIdIncrementValue, pl);
-		CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct );
+		CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct, parentJid);
 		sortCustomers(customers, new CustomerComparatorOriginalOrder());
 		writeResultsToFile();
 	}
