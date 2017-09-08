@@ -208,7 +208,7 @@ public class BatchEngine {
 		
 		for( int i = cusIdx; mscsMatch; i++){
 			if( i < input.size() ){
-				System.out.println(input.size() + " " + i + " " + cusIdx);
+				//System.out.println(input.size() + " " + i + " " + cusIdx);
 				if( input.get(i).getMsc().equals(mscToMatch) ){
 					result ++;
 				} else {

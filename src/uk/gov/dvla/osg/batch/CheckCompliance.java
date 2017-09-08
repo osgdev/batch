@@ -39,9 +39,10 @@ public class CheckCompliance {
 		totalMailsortCount = 0;
 		badDpsCount = 0;
 		goodDpsCount = 0;
-		if( !( "UNSORTED".equalsIgnoreCase(prodConfig.getMailsortProduct()) ) ){
+		
+		if(!( "UNSORTED".equalsIgnoreCase(prodConfig.getMailsortProduct()) ) ){
 			for(Customer cus : customers){
-				if( postConfig.getUkmBatchTypes().contains(cus.getBatchType()) ){
+				if(postConfig.getUkmBatchTypes().contains(cus.getBatchType()) ){
 					
 					totalMailsortCount ++;
 					if( ( cus.getDps()==null ) || ( cus.getDps().isEmpty() ) || ( "9Z".equalsIgnoreCase(cus.getDps()) )  ){
@@ -55,8 +56,8 @@ public class CheckCompliance {
 			maxBadDps = (((float)goodDpsCount / 100) * (float) percentage) -1;
 			compliance = 100 - ( ((float) badDpsCount / (float)goodDpsCount) * 100);
 			
-			LOGGER.info("Run total={}, total mailsort count={}, good DPS count={}, bad DPS count={}, maximum permitted default DPS={}, compliance level={} minimum complinace set to {}",customers.size(),totalMailsortCount,goodDpsCount,badDpsCount,maxBadDps,compliance,postConfig.getUkmMinimumCompliance());
-			
+			LOGGER.info("Run total={}, total mailsort count={}, good DPS count={}, bad DPS count={}, maximum permitted default DPS={}, compliance level={} minimum compliance set to {}",customers.size(),totalMailsortCount,goodDpsCount,badDpsCount,maxBadDps,compliance,postConfig.getUkmMinimumCompliance());
+
 		}else{
 			LOGGER.info("Mailsort product set to UNSORTED in config '{}' returning 0",prodConfig.getFilename());
 			compliance = 0f;

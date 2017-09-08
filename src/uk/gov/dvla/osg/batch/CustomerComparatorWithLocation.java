@@ -80,8 +80,17 @@ public class CustomerComparatorWithLocation implements Comparator<Customer>{
             return mscResult;
         }
 
+        
+        // Next by Post Code
+        int pcResult = o1.getPostcode().compareTo(o2.getPostcode());
+        //LOGGER.debug("Comparing '{}' with '{}' result '{}' for ref '{}' & '{}'", o1.getMsc(),o2.getMsc(),mscResult,o1.getDocRef(),o2.getDocRef());
+        if (pcResult != 0){
+            return pcResult;
+        }
+        
         // Finally by GRP_ID
         return o1.getGroupId().compareTo(o2.getGroupId());
+         
 	}
 
 }

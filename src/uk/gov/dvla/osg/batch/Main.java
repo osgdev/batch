@@ -281,16 +281,20 @@ public class Main {
 							customer.setEnvelope(productionConfig.getEnvelopeWelshMm());
 						}
 						customer.setProduct(actualMailProduct);
+						LOGGER.debug("Customer with doc ref '{}', mail product set to '{}', envelope set to: '{}'",customer.getDocRef(),customer.getProduct(),customer.getEnvelope());
 					}else if("UNSORTED".equalsIgnoreCase(customer.getBatchType())){
 						if("E".equalsIgnoreCase(customer.getLang()) ){
 							customer.setEnvelope(productionConfig.getEnvelopeEnglishUnsorted());
 						}else{
 							customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
 						}
+
 						customer.setProduct("UNSORTED");
+						LOGGER.debug("Customer with doc ref '{}', mail product set to '{}', envelope set to: '{}'",customer.getDocRef(),customer.getProduct(),customer.getEnvelope());
 					}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) || "REJECT".equalsIgnoreCase(customer.getBatchType()) ){
 						customer.setEnvelope("");
 						customer.setProduct("");
+						LOGGER.debug("Customer with doc ref '{}', mail product set to '{}', envelope set to: '{}'",customer.getDocRef(),customer.getProduct(),customer.getEnvelope());
 					}
 				}
 			}
@@ -299,6 +303,8 @@ public class Main {
 			System.exit(1);
 		}
 		LOGGER.info("Run will be sent via {} product.",actualMailProduct);
+		LOGGER.debug("Envelopes to {} product.",actualMailProduct);
+		
 	}
 
 	private static void sortCustomers(ArrayList<Customer> list, Comparator comparator) {
@@ -542,6 +548,7 @@ public class Main {
 		CONFIG = new Properties();
 		try {
 			CONFIG.load(new FileInputStream(propsFile));
+			LOGGER.info("Log file loaded ok:  '{}'",propsFile);
 		} catch (IOException e) {
 			LOGGER.fatal("Log file '{}' didn't load: '{}'",propsFile, e.getMessage());
 			System.exit(1);

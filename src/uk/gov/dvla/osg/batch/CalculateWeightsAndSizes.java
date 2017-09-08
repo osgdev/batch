@@ -61,6 +61,10 @@ public class CalculateWeightsAndSizes {
 				
 				paperSize = stationeryLookup.getLookup().get(cus.getStationery()).getThickness() * envelopeLookup.getLookup().get(pc.getEnvelopeType()).getFoldMultiplier();
 				paperWeight = stationeryLookup.getLookup().get(cus.getStationery()).getWeight() * cus.getNoOfPages();
+				
+				LOGGER.debug("Customer with doc ref '{}' Stationery/Weight {}/{}, Envelope/Weight {}/{}",cus.getDocRef(),stationeryLookup.getLookup().get(cus.getStationery()).getRef(), envelopeWeight, envelopeLookup.getLookup().get(pc.getEnvelopeType()).getRef(),paperWeight);
+				LOGGER.debug("Customer with doc ref '{}' Stationery/Thickness {}/{}, Envelope/Thickness {}/{}",cus.getDocRef(),stationeryLookup.getLookup().get(cus.getStationery()).getRef(), envelopeSize, envelopeLookup.getLookup().get(pc.getEnvelopeType()).getRef(),paperSize);
+				
 			} catch (NullPointerException e){
 				LOGGER.fatal("Looking up insert '{}', envelope, '{}', stationery '{}'", cus.getInsertRef(), pc.getEnvelopeType(), cus.getStationery());
 				LOGGER.fatal("Envelope, Insert or Stationery lookup failed: '{}'", e.getMessage());
@@ -75,7 +79,7 @@ public class CalculateWeightsAndSizes {
 				totalWeight=paperWeight;
 			}
 			
-			//LOGGER.debug("Customer with doc ref '{}' size set to {}, weight set to {}",cus.getDocRef(),totalSize, totalWeight);
+			LOGGER.debug("Customer with doc ref '{}' size set to {}, weight set to {}",cus.getDocRef(),totalSize, totalWeight);
 			cus.setWeight(totalWeight);
 			cus.setSize(totalSize);
 			
@@ -86,7 +90,7 @@ public class CalculateWeightsAndSizes {
 				
 				for(Customer customer : group){
 					customer.setTotalPagesInGroup(pageInGroupCount);
-					//LOGGER.debug("Customer '{}' total pages set to {}",customer.getDocRef(),pageInGroupCount);
+					LOGGER.debug("Customer with doc ref '{}' total pages set to {}",customer.getDocRef(),pageInGroupCount);
 				}
 				pageInGroupCount=0;
 				group.clear();
