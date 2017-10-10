@@ -59,7 +59,8 @@ public class CalculateWeightsAndSizes {
 				envelopeSize = envelopeLookup.getLookup().get(pc.getEnvelopeType()).getThickness();
 				envelopeWeight = envelopeLookup.getLookup().get(pc.getEnvelopeType()).getWeight();
 				
-				paperSize = stationeryLookup.getLookup().get(cus.getStationery()).getThickness() * envelopeLookup.getLookup().get(pc.getEnvelopeType()).getFoldMultiplier();
+				//paperSize = stationeryLookup.getLookup().get(cus.getStationery()).getThickness() * envelopeLookup.getLookup().get(pc.getEnvelopeType()).getFoldMultiplier();
+				paperSize = (stationeryLookup.getLookup().get(cus.getStationery()).getThickness() * envelopeLookup.getLookup().get(pc.getEnvelopeType()).getFoldMultiplier()) * cus.getNoOfPages();
 				paperWeight = stationeryLookup.getLookup().get(cus.getStationery()).getWeight() * cus.getNoOfPages();
 				
 				LOGGER.debug("Customer with doc ref '{}' Stationery/Weight {}/{}, Envelope/Weight {}/{}",cus.getDocRef(),stationeryLookup.getLookup().get(cus.getStationery()).getRef(), envelopeWeight, envelopeLookup.getLookup().get(pc.getEnvelopeType()).getRef(),paperWeight);

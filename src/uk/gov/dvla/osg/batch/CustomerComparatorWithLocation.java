@@ -38,7 +38,7 @@ public class CustomerComparatorWithLocation implements Comparator<Customer>{
             return langResult;
         }
         
-     // Next by STATIONERY - stop if this gives a result.
+        // Next by STATIONERY - stop if this gives a result.
         int statResult = o1.getStationery().compareTo(o2.getStationery());
         //LOGGER.debug("Comparing '{}' with '{}' result '{}' for refs '{}' & '{}'",o1.getLang(),o2.getLang(),langResult,o1.getDocRef(),o2.getDocRef());
         if (statResult != 0){

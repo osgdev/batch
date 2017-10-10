@@ -67,7 +67,7 @@ public class Main {
 	
 	
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		LOGGER.info("Starting uk.gov.dvla.osg.batch.Main");
 		validateNumberOfArgs(args);
 		assignArgs(args);
@@ -85,6 +85,31 @@ public class Main {
 		ensureRequiredPropsAreSet(headerRecords);
 		generateCustomersFromInputFile();
 		sortCustomers(customers, new CustomerComparator());
+		
+		//DEBUG
+//		File debugFile = new File("c:\\logs\\DebugCalcLocation.csv");
+//	  	debugFile.createNewFile();
+//        FileWriter writer = new FileWriter(debugFile); 
+		/*
+		 * SORT ORDER IS:
+		 * LOCATION
+		 * LANGUAGE
+		 * STATIONERY
+		 * PRESENTATION_ORDER
+		 * SUB_BATCH
+		 * SORT_FIELD
+		 * FLEET_NO
+		 * MSC
+		 * GRP_ID
+		 */
+//        writer.write("Location,Language,Stationery,Presentation,SubBatch,SortField,FleetNo,MSC,GroupId"+"\n");
+//		for(Customer customer : customers){
+//			writer.write(String.join(",", customer.getSite(), customer.getLang(),
+//					customer.getStationery(),String.valueOf(customer.getPresentationPriority()),
+//					customer.getBatchType()+"_"+customer.getSubBatch(),customer.getSortField(),customer.getFleetNo(),customer.getMsc(),customer.getGroupId())+"\n");
+//		}
+//		writer.close();
+		
 		CalculateLocation cl = new CalculateLocation(customers, lookup, productionConfig);
 		sortCustomers(customers, new CustomerComparatorWithLocation());
 		CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers, productionConfig);
@@ -93,6 +118,8 @@ public class Main {
 		calculateActualMailProduct(cc);
 		writeStringToFile( getComplianceReportString(cc), mailmarkCompliancePath, true );
 		sortCustomers(customers, new CustomerComparatorWithLocation());
+		
+		
 		CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
 		BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig, parentJid, tenDigitJobIdIncrementValue, pl);
 		CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct, parentJid);
