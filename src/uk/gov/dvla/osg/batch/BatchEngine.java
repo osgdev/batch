@@ -69,26 +69,20 @@ public class BatchEngine {
 						input.get(cusIdx - 1).setEog("X");
 					}
 				}
-				
-				
-				
 				batchSequence ++;
 				tenDigitJid = tenDigitJid + jidInc;
 				pageCount = customer.getNoOfPages();
 				customer.setJid(parentJid + "." + batchSequence);
 				customer.setTenDigitJid(tenDigitJid);
-
 			}
 			prev = customer;
 			customer.setBatchSequence(batchSequence);
 			customer.setSequence(pid);
 			pid++;
 			cusIdx ++;
-		}
-		
+		}	
 	}
 	
-
 	private boolean customerIsEog(int cusIdx) {
 		boolean result = false;
 		if( "X".equalsIgnoreCase(input.get(cusIdx).getEog()) ){

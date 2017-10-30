@@ -86,10 +86,22 @@ public class Main {
 		generateCustomersFromInputFile();
 		sortCustomers(customers, new CustomerComparator());
 		
-		//DEBUG
+
+		CalculateLocation cl = new CalculateLocation(customers, lookup, productionConfig);
+		sortCustomers(customers, new CustomerComparatorWithLocation());
+		
+		CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers, productionConfig);
+		CheckCompliance cc = new CheckCompliance(customers, productionConfig, postageConfig, presLookup);
+		sortCustomers(customers, new CustomerComparatorWithLocation());
+		
+		calculateActualMailProduct(cc);
+		writeStringToFile( getComplianceReportString(cc), mailmarkCompliancePath, true );
+		sortCustomers(customers, new CustomerComparatorWithLocation());
+		
+		// START DEBUG
 //		File debugFile = new File("c:\\logs\\DebugCalcLocation.csv");
 //	  	debugFile.createNewFile();
-//        FileWriter writer = new FileWriter(debugFile); 
+//      FileWriter writer = new FileWriter(debugFile); 
 		/*
 		 * SORT ORDER IS:
 		 * LOCATION
@@ -109,21 +121,13 @@ public class Main {
 //					customer.getBatchType()+"_"+customer.getSubBatch(),customer.getSortField(),customer.getFleetNo(),customer.getMsc(),customer.getGroupId())+"\n");
 //		}
 //		writer.close();
-		
-		CalculateLocation cl = new CalculateLocation(customers, lookup, productionConfig);
-		sortCustomers(customers, new CustomerComparatorWithLocation());
-		CalculateEndOfGroups eogs = new CalculateEndOfGroups(customers, productionConfig);
-		CheckCompliance cc = new CheckCompliance(customers, productionConfig, postageConfig, presLookup);
-		sortCustomers(customers, new CustomerComparatorWithLocation());
-		calculateActualMailProduct(cc);
-		writeStringToFile( getComplianceReportString(cc), mailmarkCompliancePath, true );
-		sortCustomers(customers, new CustomerComparatorWithLocation());
-		
+		// END DEBUG		
 		
 		CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
 		BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig, parentJid, tenDigitJobIdIncrementValue, pl);
 		CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct, parentJid);
 		sortCustomers(customers, new CustomerComparatorOriginalOrder());
+		
 		writeResultsToFile();
 	}
 
@@ -195,8 +199,14 @@ public class Main {
 						}
 					}else if( x == seqFieldIdx ){
 						list.add("" + customers.get(i).getSequence());
-					}else if( x == mscIdx ){
-						list.add(customers.get(i).getMsc());
+					}else if( x == mscIdx ) {
+						if("SORTED".equals(customers.get(i).getBatchType())) {
+							list.add(customers.get(i).getMsc());
+						} else if("MULTI".equals(customers.get(i).getBatchType()) && !("UNSORTED".equals(customers.get(i).getProduct()))) { 
+							list.add(customers.get(i).getMsc());
+						} else {
+							list.add("");
+						}
 					}else if( x == outEnvIdx ){
 						list.add(customers.get(i).getEnvelope());
 					}else if( x == mailingProductIdx ){
@@ -239,8 +249,7 @@ public class Main {
 				//CHANGE BATCH TYPE TO UNSORTED FOR ALL SORTED
 				if("SORTED".equalsIgnoreCase(customer.getBatchType()) ){
 					//LOGGER.info("Changing batch type '{}' to UNSORTED",customer.getBatchType());
-					customer.updateBatchType("UNSORTED", presLookup);
-					
+					customer.updateBatchTypeAndPres("UNSORTED", customer.getSubBatch().trim(), presLookup);		
 				}
 				customer.setProduct(actualMailProduct);
 			}

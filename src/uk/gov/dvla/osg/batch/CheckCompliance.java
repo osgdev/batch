@@ -75,22 +75,23 @@ public class CheckCompliance {
 					mscs.add(cus.getLang() + cus.getBatchType() + cus.getSubBatch() + cus.getMsc());
 				}
 			}
+			
 			int occurrences =0;
 			for(String msc : uniqueMscs){
 				occurrences = Collections.frequency(mscs, msc);
 				if( occurrences < postConfig.getUkmMinimumTrayVolume() ){
 					mscsToAdjust.add(msc);
+					
 					LOGGER.info("MSC '{}' has only {} items, minimum volume {}",msc,occurrences,postConfig.getUkmMinimumTrayVolume());
 				}
 			}
 			
 			if( mscsToAdjust.size() > 0 ){
 				LOGGER.info("Adjusting {} mscs",mscsToAdjust.size());
-				for(Customer cus : customers){
+				for(Customer cus : customers){;
 					if( mscsToAdjust.contains(cus.getLang() + cus.getBatchType() + cus.getSubBatch() + cus.getMsc()) ){
-						cus.updateBatchType("UNSORTED", presLookup);
+						cus.updateBatchTypeAndPres("UNSORTED", cus.getSubBatch().trim(), presLookup);
 						cus.setEog("X");
-						cus.setPresentationPriority(presLookup.get("UNSORTED"));
 					}
 				}
 			}
