@@ -123,7 +123,7 @@ public class Main {
 //		writer.close();
 		// END DEBUG		
 		
-		CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig);
+		CalculateWeightsAndSizes cwas = new CalculateWeightsAndSizes(customers, il, sl, el, productionConfig, pl);
 		BatchEngine be = new BatchEngine(jid, customers, productionConfig, postageConfig, parentJid, tenDigitJobIdIncrementValue, pl);
 		CreateUkMailResources ukm = new CreateUkMailResources(customers, postageConfig, productionConfig, cc.getDpsAccuracy(), runNo,actualMailProduct, parentJid);
 		sortCustomers(customers, new CustomerComparatorOriginalOrder());
@@ -271,7 +271,7 @@ public class Main {
 						customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
 					}
 					customer.setProduct("UNSORTED");
-				}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) || "REJECT".equalsIgnoreCase(customer.getBatchType()) ){
+				}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "SORTING".equalsIgnoreCase(customer.getBatchType())|| "FLEET".equalsIgnoreCase(customer.getBatchType()) || "REJECT".equalsIgnoreCase(customer.getBatchType()) ){
 					customer.setEnvelope("");
 					customer.setProduct("");
 				}
@@ -295,7 +295,7 @@ public class Main {
 							customer.setEnvelope(productionConfig.getEnvelopeWelshUnsorted());
 						}
 						customer.setProduct("UNSORTED");
-					}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) || "REJECT".equalsIgnoreCase(customer.getBatchType()) ){
+					}else if("CLERICAL".equalsIgnoreCase(customer.getBatchType()) || "SORTING".equalsIgnoreCase(customer.getBatchType()) || "FLEET".equalsIgnoreCase(customer.getBatchType()) || "REJECT".equalsIgnoreCase(customer.getBatchType()) ){
 						customer.setEnvelope("");
 						customer.setProduct("");
 					}
